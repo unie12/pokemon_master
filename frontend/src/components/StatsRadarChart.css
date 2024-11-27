@@ -1,0 +1,66 @@
+.radar-grid {
+    fill: none;
+    stroke: #e0e0e0;
+    stroke-width: 0.01;
+}
+
+.grid-label {
+    font-size: 0.08px;
+    fill: #999;
+    dominant-baseline: middle;
+}
+
+.radar-axis {
+    stroke: #666;
+    stroke-width: 0.01;
+}
+
+.stat-polygon {
+    fill: rgba(74, 144, 226, 0.2);
+    stroke: #4a90e2;
+    stroke-width: 0.02;
+    transition: all 0.3s ease;
+}
+
+.stat-point {
+    fill: #4a90e2;
+    stroke: white;
+    stroke-width: 0.02; 
+    opacity: 0;
+    transition: all 0.3s ease;
+}
+
+.stat-value-tooltip {
+    font-size: 0.12px;
+    fill: #333;
+    font-weight: bold;
+    opacity: 0;
+    transition: all 0.3s ease;
+    pointer-events: none;
+    background: white;  
+}
+
+.stat-point-group:hover .stat-point,
+.stat-group:hover .stat-point {
+    opacity: 1;
+}
+
+.stat-point-group:hover .stat-value-tooltip,
+.stat-group:hover .stat-value-tooltip {
+    opacity: 1;
+}
+
+.stat-label {
+    font-size: 0.15px;
+    fill: #333;
+    font-weight: bold;
+}
+
+.stat-max {
+    font-size: 0.12px;
+    fill: #666;
+}
+
+.stat-group:hover .stat-polygon {
+    fill: rgba(74, 144, 226, 0.3);
+}
