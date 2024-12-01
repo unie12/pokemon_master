@@ -37,6 +37,26 @@ def create_tables(cur):
         );
     """)
 
+    # 팀 테이블 생성
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS Team (
+            team_id SERIAL PRIMARY KEY,
+            user_id INTEGER REFERENCES Users(user_id),
+            team_name VARCHAR(50) NOT NULL,
+            created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    """)
+
+    # 팀 포켓몬 테이블 생성
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS TeamPokemon (
+            team_id INTEGER REFERENCES Team(team_id),
+            pokemon_id INTEGER REFERENCES Pokemon(id),
+            slot_number INTEGER CHECK (slot_number BETWEEN 1 AND 6),
+            PRIMARY KEY (team_id, slot_number)
+        );
+    """)
+    
 def import_pokemon_data():
     try:
         # CSV 파일 읽기

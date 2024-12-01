@@ -27,6 +27,9 @@ const Header = () => {
                     </h1>
                 </div>
                 <div className="nav-right">
+                    <button onClick={() => navigate('/ranking')} className="ranking-btn">
+                        랭킹
+                    </button>
                     {user ? (
                         <div className="user-info">
                             <span>{user.username}님 환영합니다!</span>
