@@ -1,0 +1,66 @@
+/* Modal layout */
+.team-comparison-modal {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background-color: white;
+    padding: 2.5rem;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 1200px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+/* Team layout */
+.teams-container {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 3rem;
+    padding: 1rem;
+}
+
+/* Stats comparison */
+.stats-comparison {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 1.5rem;
+    padding: 2rem;
+    background-color: #f8f9fa;
+    border-radius: 12px;
+}
+
+.stat-row {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 2rem;
+    align-items: center;
+    text-align: center;
+    padding: 0.5rem;
+    transition: background-color 0.2s;
+}
+
+.stat-row:hover {
+    background-color: #e9ecef;
+}
+
+/* Highlight current user's team */
+.my-team {
+    background-color: rgba(0, 123, 255, 0.08);
+    border-radius: 12px;
+    transition: transform 0.2s;
+}
+
+.my-team:hover {
+    transform: translateY(-2px);
+}

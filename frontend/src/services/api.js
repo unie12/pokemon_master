@@ -65,3 +65,27 @@ export const authApi = {
         }
     }
 };
+
+export const rankingApi = {
+    getRankings: async (page = 1, perPage = 10) => {
+        try {
+            const response = await axios.get(
+                `${API_URL}/rankings?page=${page}&per_page=${perPage}`
+            );
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching rankings:', error);
+            throw error;
+        }
+    },
+
+    compareTeams: async (teamId) => {
+        try {
+            const response = await axios.get(`${API_URL}/rankings/compare/${teamId}`);
+            return response.data;
+        } catch (error) {
+            console.error('Error comparing teams:', error);
+            throw error;
+        }
+    }
+};

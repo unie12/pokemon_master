@@ -4,6 +4,7 @@ import Header from './components/Header';
 import PokemonList from './pages/PokemonList';
 import PokemonDetail from './pages/PokemonDetail';
 import Auth from './pages/Auth';
+import Ranking from './pages/Ranking';
 import './App.css';
 import { AuthProvider } from './contexts/AuthContext';
 
@@ -17,6 +18,7 @@ function App() {
                         <Route path="/auth" element={<Auth />} />
                         <Route path="/" element={<PokemonList />} />
                         <Route path="/pokemon/:id" element={<PokemonDetail />} />
+                        <Route path="/ranking" element={<Ranking />} />
                     </Routes>
                 </div>
             </Router>
