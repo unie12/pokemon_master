@@ -33,3 +33,35 @@ export const pokemonApi = {
         }
     }
 };
+
+export const authApi = {
+    register: async (userData) => {
+        try {
+            const response = await axios.post(`${API_URL}/auth/register`, userData);
+            return response.data;
+        } catch (error) {
+            console.error('Registration error:', error);
+            throw error.response.data;
+        }
+    },
+
+    login: async (credentials) => {
+        try {
+            const response = await axios.post(`${API_URL}/auth/login`, credentials);
+            return response.data;
+        } catch (error) {
+            console.error('Login error:', error);
+            throw error.response.data;
+        }
+    },
+
+    logout: async () => {
+        try {
+            const response = await axios.post(`${API_URL}/auth/logout`);
+            return response.data;
+        } catch (error) {
+            console.error('Logout error:', error);
+            throw error;
+        }
+    }
+};
