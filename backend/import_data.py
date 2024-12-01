@@ -4,12 +4,13 @@ from psycopg2.extras import execute_values
 from config.database import DATABASE_CONFIG
 import os
 
-def create_pokemon_table(cur):
-    """포켓몬 테이블 생성"""
+def create_tables(cur):
+    """테이블 생성"""
+    # 포켓몬 테이블 생성
     cur.execute("""
         CREATE TABLE IF NOT EXISTS Pokemon (
-            id SERIAL PRIMARY KEY,          -- 자동 증가하는 고유 ID
-            pokedex_number INTEGER,         -- 원본 포켓몬 도감 번호
+            id SERIAL PRIMARY KEY,        
+            pokedex_number INTEGER,       
             name VARCHAR(50) NOT NULL,
             type1 VARCHAR(20) NOT NULL,
             type2 VARCHAR(20),
@@ -21,6 +22,18 @@ def create_pokemon_table(cur):
             sp_defense INTEGER,
             speed INTEGER,
             image_path VARCHAR(255)
+        );
+    """)
+
+    # 사용자 테이블 생성
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS Users (
+            user_id SERIAL PRIMARY KEY,
+            username VARCHAR(50) UNIQUE NOT NULL,
+            email VARCHAR(100) UNIQUE NOT NULL,
+            password VARCHAR(255) NOT NULL,
+            last_gacha_time TIMESTAMP,
+            join_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     """)
 
@@ -46,7 +59,7 @@ def import_pokemon_data():
         cur.execute("DROP TABLE IF EXISTS Pokemon CASCADE;")
         
         # 테이블 생성
-        create_pokemon_table(cur)
+        create_tables(cur)
         
         # 데이터 일괄 삽입을 위한 준비
         data = [

@@ -1,7 +1,19 @@
+import psycopg2
+from contextlib import contextmanager
+
 DATABASE_CONFIG = {
     'dbname': 'pokemon',
     'user': 'postgres',
-    # 'password': 'your_password',  # PostgreSQL 비밀번호 설정
     'host': 'localhost',
     'port': '5432'
 }
+
+@contextmanager
+def get_db_connection():
+    conn = None
+    try:
+        conn = psycopg2.connect(**DATABASE_CONFIG)
+        yield conn
+    finally:
+        if conn is not None:
+            conn.close()
