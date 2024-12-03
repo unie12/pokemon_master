@@ -89,3 +89,15 @@ export const rankingApi = {
         }
     }
 };
+
+export const teamApi = {
+    getTeamTypeAnalysis: async (teamId) => {
+        try {
+            const response = await axios.get(`${API_URL}/teams/${teamId}/type-analysis`);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching team type analysis:', error);
+            throw error;
+        }
+    }
+};
