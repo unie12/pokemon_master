@@ -5,16 +5,25 @@
 }
 
 .ranking-list {
-    overflow-x: auto;
+    height: 80vh;
+    overflow-y: auto;
     background-color: white;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    scroll-behavior: smooth;
+}
+
+.ranking-list::-webkit-scrollbar {
+    display: none;
 }
 
 .ranking-list table {
     width: 100%;
     border-collapse: separate;
     border-spacing: 0;
+    transform: translateZ(0);
 }
 
 .ranking-list th,
@@ -30,6 +39,50 @@
     position: sticky;
     top: 0;
     z-index: 1;
+}
+
+.pokemon-images-container {
+    padding: 8px 0;
+}
+
+.pokemon-images {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: nowrap;
+    padding: 4px;
+    min-height: 70px;
+    overflow: hidden;
+    transform: translateZ(0);
+}
+
+.pokemon-image-wrapper {
+    flex: 0 0 70px;
+    height: 70px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s;
+}
+
+.pokemon-thumbnail {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transform: scale(1.4);
+}
+
+.my-team {
+    background-color: rgba(0, 123, 255, 0.08);
+}
+
+.loading-spinner {
+    text-align: center;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.8);
 }
 
 /* 테이블 열 너비 조정 */
@@ -55,53 +108,11 @@
     min-height: 70px;
     overflow: hidden; 
 }
-.pokemon-image-wrapper {
-    flex: 0 0 70px;
-    height: 70px;
-    background-color: #f8f9fa;
-    border-radius: 8px;
-    padding: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: transform 0.2s;
+.pokemon-images {
+    transform: translateZ(0);
+    backface-visibility: hidden;
 }
-
 .pokemon-image-wrapper:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-.pokemon-thumbnail {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    transform: scale(1.4);
-}
-
-.pagination {
-    display: flex;
-    justify-content: center;
-    gap: 0.5rem;
-    margin-top: 2rem;
-    padding: 1rem 0;
-}
-
-.pagination button {
-    padding: 0.5rem 1rem;
-    border: 1px solid #ddd;
-    background: white;
-    cursor: pointer;
-    border-radius: 4px;
-    transition: all 0.2s;
-}
-
-.pagination button:hover {
-    background-color: #f0f0f0;
-}
-
-.pagination button.active {
-    background-color: #007bff;
-    color: white;
-    border-color: #007bff;
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { rankingApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -8,24 +8,38 @@ import './Ranking.css';
 const Ranking = () => {
     const [rankings, setRankings] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(0);
+    const [hasMore, setHasMore] = useState(true);
     const [isLoading, setIsLoading] = useState(false);
     const [selectedTeam, setSelectedTeam] = useState(null);
     const [isComparing, setIsComparing] = useState(false);
     const { user } = useAuth();
+    const observer = useRef();
 
-    const navigate = useNavigate();
+    const lastRankingElementRef = useCallback(node => {
+        if (isLoading) return;
+        if (observer.current) observer.current.disconnect();
+        observer.current = new IntersectionObserver(entries => {
+            if (entries[0].isIntersecting && hasMore) {
+                setCurrentPage(prevPage => prevPage + 1);
+            }
+        });
+        if (node) observer.current.observe(node);
+    }, [isLoading, hasMore]);
 
     useEffect(() => {
         fetchRankings(currentPage);
     }, [currentPage]);
 
     const fetchRankings = async (page) => {
+        if (isLoading) return;
         setIsLoading(true);
         try {
             const response = await rankingApi.getRankings(page);
-            setRankings(response.rankings);
-            setTotalPages(Math.ceil(response.total_count / 10));
+            setRankings(prev => {
+                if (page === 1) return response.rankings;
+                return [...prev, ...response.rankings];
+            });
+            setHasMore(response.rankings.length === 10);
         } catch (error) {
             console.error('랭킹 조회 실패:', error);
         } finally {
@@ -48,11 +62,6 @@ const Ranking = () => {
         }
     };
 
-    const handleCloseComparison = () => {
-        setSelectedTeam(null);
-        setIsComparing(false);
-    };
-
     return (
         <div className="ranking-container">
             <h2>팀 랭킹</h2>
@@ -68,13 +77,14 @@ const Ranking = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {rankings.map((rank) => (
-                        <tr 
-                            key={rank.team_id}
-                            className={user && user.user_id && user.user_id === rank.user_id ? 'my-team' : ''}
-                            onClick={() => handleTeamClick(rank.team_id)}
-                            style={{ cursor: 'pointer' }}
-                        >
+                        {rankings.map((rank, index) => (
+                            <tr 
+                                key={`${rank.team_id}-${index}`}
+                                ref={index === rankings.length - 1 ? lastRankingElementRef : null}
+                                className={user?.user_id === rank.user_id ? 'my-team' : ''}
+                                onClick={() => handleTeamClick(rank.team_id)}
+                                style={{ cursor: 'pointer' }}
+                            >
                                 <td>{rank.rank}</td>
                                 <td>{rank.username}</td>
                                 <td className="pokemon-images-container">
@@ -105,26 +115,15 @@ const Ranking = () => {
             {selectedTeam && isComparing && (
                 <TeamComparison 
                     selectedTeam={selectedTeam}
-                    onClose={handleCloseComparison}
+                    onClose={() => {
+                        setSelectedTeam(null);
+                        setIsComparing(false);
+                    }}
                 />
             )}
 
-            <div className="pagination">
-                {[...Array(totalPages)].map((_, i) => (
-                    <button
-                        key={i + 1}
-                        onClick={() => setCurrentPage(i + 1)}
-                        className={currentPage === i + 1 ? 'active' : ''}
-                    >
-                        {i + 1}
-                    </button>
-                ))}
-            </div>
-
             {isLoading && (
-                <div className="loading-overlay">
-                    <div className="loading-spinner">Loading...</div>
-                </div>
+                <div className="loading-spinner">Loading...</div>
             )}
         </div>
     );
