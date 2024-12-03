@@ -11,33 +11,44 @@
 
 .modal-content {
     background-color: white;
-    padding: 2.5rem;
+    padding: 3rem;
     border-radius: 16px;
-    width: 90%;
-    max-width: 1200px;
-    max-height: 90vh;
+    width: 95%;
+    max-width: 1600px;
+    max-height: 95vh;
     overflow-y: auto;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    position: relative;
+}
+
+/* Single team view */
+.single-team-view {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 /* Team layout */
 .teams-container {
     display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    gap: 3rem;
-    padding: 1rem;
+    grid-template-columns: minmax(500px, 1fr) 350px minmax(500px, 1fr);
+    gap: 2rem;
+    padding: 1.5rem;
+    align-items: start;
 }
 
 /* Stats comparison */
 .stats-comparison {
-    position: relative;
     display: flex;
     flex-direction: column;
     justify-content: center;
     gap: 1.5rem;
-    padding: 2rem;
     background-color: #f8f9fa;
     border-radius: 12px;
+    min-width: 350px;
 }
 
 .stat-row {
@@ -46,21 +57,202 @@
     gap: 2rem;
     align-items: center;
     text-align: center;
-    padding: 0.5rem;
-    transition: background-color 0.2s;
+    padding: 0.8rem;
+    transition: all 0.2s;
+    position: relative;
 }
 
-.stat-row:hover {
-    background-color: #e9ecef;
+.stat-row span.winning {
+    color: #2b6cb0;
+    font-weight: bold;
+    position: relative;
 }
 
-/* Highlight current user's team */
-.my-team {
-    background-color: rgba(0, 123, 255, 0.08);
+.stat-row span.winning::after {
+    content: '▲';
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: red;
+    font-size: 0.8rem;
+}
+
+/* Pokemon positioning */
+.team-list {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 500px;
+    margin: 2rem auto;
+}
+
+.pokemon-row {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+}
+
+.pokemon-row.front {
+    margin-top: 1rem;
+}
+
+.team-pokemon-card {
+    padding: 1rem;
+    background: transparent;
+    border: none;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Front row positions */
+.team-pokemon-card:nth-child(1) { left: 20%; top: 65%; }
+.team-pokemon-card:nth-child(2) { left: 50%; top: 65%; }
+
+/* Back row positions */
+.team-pokemon-card:nth-child(3) { left: 40%; top: 25%; }
+.team-pokemon-card:nth-child(4) { left: 35%; top: 25%; }
+.team-pokemon-card:nth-child(5) { left: 60%; top: 25%; }
+
+/* Pokemon image styling */
+.pokemon-image-container {
+    width: 120px;
+    height: 120px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.team-pokemon-card img {
+    width: 130%;
+    height: 130%;
+    object-fit: contain;
+    transition: transform 0.3s ease;
+}
+
+/* Left team mirror effect - 이미지만 반전 */
+.team-section.my-team .team-pokemon-card img {
+    transform: scaleX(-1);
+}
+
+/* Pokemon info */
+.pokemon-info {
+    text-align: center;
+    margin-top: 1rem;
+}
+
+.pokemon-name {
+    display: block;
+    font-weight: 00;
+    font-size: 0.7rem;
+    color: #333;
+}
+
+.pokemon-type {
+    display: block;
+    font-size: 0.8rem;
+    color: #666;
+    margin-top: 0.25rem;
+}
+
+/* Team sections */
+.team-section {
+    padding: 2rem;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    min-height: 700px;
+}
+
+/* Hover effects */
+.team-pokemon-card:hover {
+    transform: translateY(-5px) scale(1.05);
+    z-index: 10;
+}
+
+/* Loading */
+.loading-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+
+/* Close button */
+.close-button {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    font-size: 1.5rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    background-color: red;
+}
+
+/* Responsive design */
+@media (max-width: 1200px) {
+    .teams-container {
+        grid-template-columns: 1fr;
+    }
+}
+
+.type-analysis {
+    margin: 1.5rem 0;
+    padding: 1rem;
+    background: #f8f9fa;
     border-radius: 12px;
-    transition: transform 0.2s;
 }
 
-.my-team:hover {
-    transform: translateY(-2px);
+.type-section {
+    margin-bottom: 1rem;
 }
+
+.type-section h4 {
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.type-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.type-tag {
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    color: white;
+    text-shadow: 0 1px 1px rgba(0,0,0,0.2);
+}
+
+.type-tag.weakness {
+    border: 2px solid #dc3545;
+}
+
+/* 포켓몬 타입별 색상 */
+.type-tag.normal { background-color: #A8A878; }
+.type-tag.fire { background-color: #F08030; }
+.type-tag.water { background-color: #6890F0; }
+.type-tag.electric { background-color: #F8D030; }
+.type-tag.grass { background-color: #78C850; }
+.type-tag.ice { background-color: #98D8D8; }
+.type-tag.fighting { background-color: #C03028; }
+.type-tag.poison { background-color: #A040A0; }
+.type-tag.ground { background-color: #E0C068; }
+.type-tag.flying { background-color: #A890F0; }
+.type-tag.psychic { background-color: #F85888; }
+.type-tag.bug { background-color: #A8B820; }
+.type-tag.rock { background-color: #B8A038; }
+.type-tag.ghost { background-color: #705898; }
+.type-tag.dragon { background-color: #7038F8; }
+.type-tag.dark { background-color: #705848; }
+.type-tag.steel { background-color: #B8B8D0; }
+.type-tag.fairy { background-color: #EE99AC; }

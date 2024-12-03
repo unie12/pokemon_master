@@ -1,29 +1,167 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { rankingApi } from '../services/api';
+import { rankingApi, teamApi } from '../services/api';
+import { TYPE_MAPPING } from '../utils/typeMapping.js';
 import './TeamComparison.css';
 
 const TeamComparison = ({ selectedTeam, onClose }) => {
     const { user } = useAuth();
     const [myTeam, setMyTeam] = useState(null);
+    const [typeAnalysis, setTypeAnalysis] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
 
+    const handleClickOutside = (event) => {
+        if (event.target.classList.contains('team-comparison-modal')) {
+            onClose();
+        }
+    };
+    
     useEffect(() => {
-        const fetchMyTeam = async () => {
+        const handleEsc = (event) => {
+            if (event.key === 'Escape') {
+                onClose();
+            }
+        };
+
+        window.addEventListener('keydown', handleEsc);
+        document.addEventListener('mousedown', handleClickOutside);
+
+        return () => {
+            window.removeEventListener('keydown', handleEsc);
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [onClose]);
+
+    useEffect(() => {
+        const fetchTeamData = async () => {
             if (user && selectedTeam && user.user_id !== selectedTeam.user_id) {
                 setIsLoading(true);
                 try {
-                    const myTeamResponse = await rankingApi.compareTeams(user.user_id);
-                    setMyTeam(myTeamResponse);
+                    // 내 팀과 상대 팀의 타입 분석을 동시에 가져옴
+                    const [myTeamResponse, myTypeAnalysis, opponentTypeAnalysis] = await Promise.all([
+                        rankingApi.compareTeams(user.user_id),
+                        teamApi.getTeamTypeAnalysis(user.user_id),
+                        teamApi.getTeamTypeAnalysis(selectedTeam.team_id)
+                    ]);
+    
+                    // 내 팀 데이터에 타입 분석 추가
+                    setMyTeam({
+                        ...myTeamResponse,
+                        type_analysis: myTypeAnalysis
+                    });
+    
+                    // 상대 팀 데이터에 타입 분석 추가
+                    selectedTeam.type_analysis = opponentTypeAnalysis;
+                    
                 } catch (error) {
-                    console.error('내 팀 정보 조회 실패:', error);
+                    console.error('Data fetch failed:', error);
+                } finally {
+                    setIsLoading(false);
+                }
+            } else if (selectedTeam) {
+                // 단일 팀 뷰일 때는 해당 팀의 타입 분석만 가져옴
+                setIsLoading(true);
+                try {
+                    const typeAnalysis = await teamApi.getTeamTypeAnalysis(selectedTeam.team_id);
+                    selectedTeam.type_analysis = typeAnalysis;
+                } catch (error) {
+                    console.error('Data fetch failed:', error);
                 } finally {
                     setIsLoading(false);
                 }
             }
         };
-        fetchMyTeam();
+        fetchTeamData();
     }, [user, selectedTeam]);
+
+
+    const renderTypeAnalysis = (types) => (
+        <div className="type-analysis">
+            <div className="type-section">
+                <h4>보유 타입</h4>
+                <div className="type-tags">
+                    {types.present_types.map(type => (
+                        <span key={type} className={`type-tag ${type.toLowerCase()}`}>
+                            {TYPE_MAPPING[type]}
+                        </span>
+                    ))}
+                </div>
+            </div>
+            <div className="type-section">
+                <h4>미보유 타입</h4>
+                <div className="type-tags">
+                    {types.missing_types.map(type => (
+                        <span key={type} className={`type-tag ${type.toLowerCase()}`}>
+                            {TYPE_MAPPING[type]}
+                        </span>
+                    ))}
+                </div>
+            </div>
+            {types.weaknesses && (
+                <div className="type-section">
+                    <h4>취약 타입</h4>
+                    <div className="type-tags">
+                        {types.weaknesses.map(type => (
+                            <span key={type} className={`type-tag weakness ${type.toLowerCase()}`}>
+                                {TYPE_MAPPING[type]}
+                            </span>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+
+    const renderPokemonList = (pokemons, isMyTeam = false) => (
+        <div className="team-list">
+            <div className="pokemon-row back">
+                {pokemons.slice(0, 3).map((pokemon) => (
+                    <div key={pokemon.id} className="team-pokemon-card">
+                        <div className="pokemon-image-container">
+                            <img 
+                                src={`http://localhost:5000/static/images/${pokemon.id}.png`}
+                                alt={pokemon.name}
+                                className={isMyTeam ? 'mirror-image' : ''}
+                                onError={(e) => {
+                                    e.target.onerror = null;
+                                    e.target.src = '/fallback-image.png';
+                                }}
+                            />
+                        </div>
+                        <div className="pokemon-info">
+                            <span className="pokemon-name">{pokemon.name}</span>
+                            <span className="pokemon-type">
+                                {TYPE_MAPPING[pokemon.type1]} {pokemon.type2 && `/ ${TYPE_MAPPING[pokemon.type2]}`}
+                            </span>
+                        </div>
+                    </div>
+                ))}
+            </div>
+            <div className="pokemon-row front">
+                {pokemons.slice(3, 5).map((pokemon) => (
+                    <div key={pokemon.id} className="team-pokemon-card">
+                        <div className="pokemon-image-container">
+                            <img 
+                                src={`http://localhost:5000/static/images/${pokemon.id}.png`}
+                                alt={pokemon.name}
+                                className={isMyTeam ? 'mirror-image' : ''}
+                                onError={(e) => {
+                                    e.target.onerror = null;
+                                    e.target.src = '/fallback-image.png';
+                                }}
+                            />
+                        </div>
+                        <div className="pokemon-info">
+                            <span className="pokemon-name">{pokemon.name}</span>
+                            <span className="pokemon-type">
+                                {TYPE_MAPPING[pokemon.type1]} {pokemon.type2 && `/ ${TYPE_MAPPING[pokemon.type2]}`}
+                            </span>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
 
     const renderStatComparison = (myValue, opponentValue, label) => {
         if (!myValue || !opponentValue) return null;
@@ -43,24 +181,9 @@ const TeamComparison = ({ selectedTeam, onClose }) => {
     const renderSingleTeamView = () => (
         <div className="single-team-view">
             <h3>{selectedTeam.username}의 팀</h3>
-            <div className="pokemon-list">
-                {selectedTeam.pokemons.map((pokemon) => (
-                    <div key={pokemon.id} className="pokemon-card">
-                        <img 
-                            src={`http://localhost:5000/static/images/${pokemon.id}.png`}
-                            alt={pokemon.name}
-                            onError={(e) => {
-                                e.target.onerror = null;
-                                e.target.src = '/fallback-image.png';
-                            }}
-                        />
-                        <span className="pokemon-name">{pokemon.name}</span>
-                        <span className="pokemon-type">
-                            {pokemon.type1} {pokemon.type2 && `/ ${pokemon.type2}`}
-                        </span>
-                    </div>
-                ))}
-            </div>
+            {renderPokemonList(selectedTeam.pokemons)}
+            {selectedTeam.type_analysis && renderTypeAnalysis(selectedTeam.type_analysis)}
+
             <div className="team-stats">
                 <div className="stat-row">
                     <label>HP</label>
@@ -96,31 +219,13 @@ const TeamComparison = ({ selectedTeam, onClose }) => {
 
     const renderComparisonView = () => {
         if (!myTeam) return <div>Loading...</div>;
-        
         return (
             <>
                 <div className="team-section my-team">
                     <h3>내 팀</h3>
-                    <div className="pokemon-list">
-                        {myTeam.pokemons.map((pokemon) => (
-                            <div key={pokemon.id} className="pokemon-card">
-                                <img 
-                                    src={`http://localhost:5000/static/images/${pokemon.id}.png`}
-                                    alt={pokemon.name}
-                                    onError={(e) => {
-                                        e.target.onerror = null;
-                                        e.target.src = '/fallback-image.png';
-                                    }}
-                                />
-                                <span className="pokemon-name">{pokemon.name}</span>
-                                <span className="pokemon-type">
-                                    {pokemon.type1} {pokemon.type2 && `/ ${pokemon.type2}`}
-                                </span>
-                            </div>
-                        ))}
-                    </div>
+                    {renderPokemonList(myTeam.pokemons, true)}
+                    {myTeam.type_analysis && renderTypeAnalysis(myTeam.type_analysis)}
                 </div>
-                
                 <div className="stats-comparison">
                     {renderStatComparison(myTeam.total_hp, selectedTeam.total_hp, 'HP')}
                     {renderStatComparison(myTeam.total_attack, selectedTeam.total_attack, '공격')}
@@ -130,27 +235,10 @@ const TeamComparison = ({ selectedTeam, onClose }) => {
                     {renderStatComparison(myTeam.total_speed, selectedTeam.total_speed, '스피드')}
                     {renderStatComparison(myTeam.total_stats, selectedTeam.total_stats, '총합')}
                 </div>
-                
                 <div className="team-section opponent-team">
                     <h3>{selectedTeam.username}의 팀</h3>
-                    <div className="pokemon-list">
-                        {selectedTeam.pokemons.map((pokemon) => (
-                            <div key={pokemon.id} className="pokemon-card">
-                                <img 
-                                    src={`http://localhost:5000/static/images/${pokemon.id}.png`}
-                                    alt={pokemon.name}
-                                    onError={(e) => {
-                                        e.target.onerror = null;
-                                        e.target.src = '/fallback-image.png';
-                                    }}
-                                />
-                                <span className="pokemon-name">{pokemon.name}</span>
-                                <span className="pokemon-type">
-                                    {pokemon.type1} {pokemon.type2 && `/ ${pokemon.type2}`}
-                                </span>
-                            </div>
-                        ))}
-                    </div>
+                    {renderPokemonList(selectedTeam.pokemons)}
+                    {selectedTeam.type_analysis && renderTypeAnalysis(selectedTeam.type_analysis)}
                 </div>
             </>
         );
@@ -158,20 +246,15 @@ const TeamComparison = ({ selectedTeam, onClose }) => {
 
     const renderTeamView = () => {
         if (!selectedTeam) return null;
-        
-        // 로그인하지 않았거나 자신의 팀인 경우 단일 팀 뷰
-        if (!user || user.user_id === selectedTeam.user_id) {
-            return renderSingleTeamView();
-        }
-        
-        // 다른 사람의 팀인 경우 비교 뷰
-        return renderComparisonView();
+        return (!user || user.user_id === selectedTeam.user_id) 
+            ? renderSingleTeamView() 
+            : renderComparisonView();
     };
 
     if (!selectedTeam) return null;
 
     return (
-        <div className="team-comparison-modal">
+        <div className="team-comparison-modal" onClick={handleClickOutside}>
             <div className="modal-content">
                 <button className="close-button" onClick={onClose}>×</button>
                 <div className="teams-container">
