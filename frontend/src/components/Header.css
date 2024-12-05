@@ -1,58 +1,77 @@
 /* components/Header.css */
 .header {
-    background-color: #f8f9fa;
-    padding: 1rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  background-color: #f8f9fa;
+  padding: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 nav {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    max-width: 1200px;
-    margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .nav-left h1 {
-    margin: 0;
-    font-size: 1.5rem;
-    color: #333;
+  margin: 0;
+  font-size: 1.5rem;
+  color: #333;
 }
 
 .nav-right {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 
 .user-info {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 
 .user-info span {
-    color: #333;
+  color: #333;
 }
 
 button {
-    padding: 0.5rem 1rem;
-    border: none;
-    border-radius: 4px;
-    background-color: #007bff;
-    color: white;
-    cursor: pointer;
-    transition: background-color 0.2s;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
-button:hover {
-    background-color: #0056b3;
+.ranking-btn {
+  background-color: #007bff;
+}
+
+.ranking-btn:hover {
+  background-color: #0056b3;
+}
+
+.gacha-btn {
+  background-color: rgb(0, 163, 68);
+}
+
+.gacha-btn:hover {
+  background-color: rgb(0, 80, 12);
+}
+
+.mypok-btn {
+  background-color: rgb(106, 0, 213);
+}
+
+.mypok-btn:hover {
+  background-color: rgb(50, 0, 100);
 }
 
 .user-info button {
-    background-color: #dc3545;
+  background-color: #dc3545;
 }
 
 .user-info button:hover {
-    background-color: #c82333;
+  background-color: #c82333;
 }
