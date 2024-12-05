@@ -5,6 +5,7 @@ DATABASE_CONFIG = {
     'dbname': 'pokemon',
     'user': 'postgres',
     'host': 'localhost',
+    # 'password': 'dlaudrjs1282@',
     'port': '5432'
 }
 

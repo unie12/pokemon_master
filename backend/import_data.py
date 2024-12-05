@@ -70,6 +70,7 @@ def import_pokemon_data():
             dbname=DATABASE_CONFIG['dbname'],
             user=DATABASE_CONFIG['user'],
             host=DATABASE_CONFIG['host'],
+            # password=DATABASE_CONFIG['password'],
             port=DATABASE_CONFIG['port']
         )
         
