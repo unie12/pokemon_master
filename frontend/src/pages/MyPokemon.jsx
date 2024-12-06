@@ -6,24 +6,38 @@ import "./MyPokemon.css";
 const MyPokemon = () => {
   const [pokemons, setPokemons] = useState([]);
   const [slots, setSlots] = useState(Array(6).fill(null));
-  const [selectedTeam, setSelectedTeam] = useState(null);
-  const [teams, setTeams] = useState([]);
-  const [newTeamName, setNewTeamName] = useState("");
+  const [team, setTeam] = useState(null);
+  const [teamName, setTeamName] = useState("");
   const { user } = useAuth();
 
   useEffect(() => {
     const fetchData = async () => {
       if (!user?.user_id) return;
-
+  
       try {
-        const [teamsResponse, pokemonsResponse] = await Promise.all([
-          teamApi.getTeams(user.user_id),
+        const [teamResponse, pokemonsResponse] = await Promise.all([
+          teamApi.getUserTeam(user.user_id),
           teamApi.getMyPokemons(user.user_id)
         ]);
-
-        if (teamsResponse.teams) {
-          setTeams(teamsResponse.teams);
+  
+        if (teamResponse.team) {
+          setTeam(teamResponse.team);
+          setTeamName(teamResponse.team.name);
+          
+          // 팀 ID로 팀 포켓몬 가져오기
+          const slotsResponse = await teamApi.getTeamPokemons(teamResponse.team.id);
+          console.log('Slots Response:', slotsResponse);
+  
+          // 응답 구조 확인 및 slots 설정
+          if (slotsResponse.success && slotsResponse.slots) {
+            // slots 배열을 그대로 설정
+            setSlots(slotsResponse.slots);
+          } else {
+            // 실패 시 기본 빈 슬롯으로 설정
+            setSlots(Array(6).fill(null));
+          }
         }
+  
         if (pokemonsResponse.pokemons) {
           setPokemons(pokemonsResponse.pokemons);
         }
@@ -31,52 +45,30 @@ const MyPokemon = () => {
         console.error("Error fetching data:", error);
       }
     };
-
+  
     fetchData();
   }, [user]);
 
-  const handleTeamSelect = async (teamId) => {
-    const id = parseInt(teamId, 10);
-    setSelectedTeam(id);
-
-    if (!id) {
-      setSlots(Array(6).fill(null));
-      return;
-    }
-
-    try {
-      const response = await teamApi.getTeamPokemons(id);
-      if (response.success && response.slots) {
-        setSlots(response.slots);
-      }
-    } catch (error) {
-      console.error("Error fetching team slots:", error);
-      setSlots(Array(6).fill(null));
-    }
-  };
-
-  const handleCreateTeam = async () => {
-    if (!newTeamName.trim()) {
+  const handleUpdateTeam = async () => {
+    if (!teamName.trim()) {
       alert("팀 이름을 입력해주세요.");
       return;
     }
 
     try {
-      const response = await teamApi.createTeam(user.user_id, newTeamName);
+      const response = await teamApi.createTeam(user.user_id, teamName);
       if (response.success) {
-        const updatedTeamsResponse = await teamApi.getTeams(user.user_id);
-        setTeams(updatedTeamsResponse.teams);
-        setNewTeamName("");
+        setTeam(response.team);
       }
     } catch (error) {
-      console.error("Error creating team:", error);
+      console.error("Error updating team:", error);
       alert(error.message);
     }
   };
 
   const handleAddToSlot = async (pokemon) => {
-    if (!selectedTeam) {
-      alert("팀을 먼저 선택해주세요.");
+    if (!team) {
+      alert("팀을 먼저 생성해주세요.");
       return;
     }
 
@@ -88,7 +80,7 @@ const MyPokemon = () => {
 
     try {
       const response = await teamApi.addPokemonToTeam(
-        selectedTeam,
+        team.id,
         pokemon.id,
         emptySlotIndex + 1
       );
@@ -106,12 +98,6 @@ const MyPokemon = () => {
           };
           return newSlots;
         });
-
-        // 서버에서 최신 데이터 가져오기
-        const updatedResponse = await teamApi.getTeamPokemons(selectedTeam);
-        if (updatedResponse.success) {
-          setSlots(updatedResponse.slots);
-        }
       }
     } catch (error) {
       console.error("Error adding pokemon:", error);
@@ -120,15 +106,17 @@ const MyPokemon = () => {
   };
 
   const handleRemoveFromSlot = async (index) => {
-    if (!selectedTeam) return;
+    if (!team) return;
 
     try {
-      const response = await teamApi.removePokemonFromTeam(selectedTeam, index + 1);
+      const response = await teamApi.removePokemonFromTeam(team.id, index + 1);
       if (response.success) {
-        const updatedResponse = await teamApi.getTeamPokemons(selectedTeam);
-        if (updatedResponse.success) {
-          setSlots(updatedResponse.slots);
-        }
+        // 즉시 UI 업데이트
+        setSlots(prev => {
+          const newSlots = [...prev];
+          newSlots[index] = null;
+          return newSlots;
+        });
       }
     } catch (error) {
       console.error("Error removing pokemon:", error);
@@ -140,32 +128,18 @@ const MyPokemon = () => {
     <div className="my-pokemon-container">
       <h1>내 포켓몬</h1>
 
-      {/* 팀 생성 섹션 */}
-      <div className="team-creator">
-        <h2>새 팀 만들기</h2>
+      {/* 팀 이름 섹션 */}
+      <div className="team-name-section">
+        <h2>팀 이름</h2>
         <input
           type="text"
-          value={newTeamName}
-          onChange={(e) => setNewTeamName(e.target.value)}
+          value={teamName}
+          onChange={(e) => setTeamName(e.target.value)}
           placeholder="팀 이름 입력"
         />
-        <button onClick={handleCreateTeam}>팀 생성</button>
-      </div>
-
-      {/* 팀 선택 섹션 */}
-      <div className="team-selector">
-        <h2>팀 선택</h2>
-        <select
-          value={selectedTeam || ''}
-          onChange={(e) => handleTeamSelect(e.target.value)}
-        >
-          <option value="">팀을 선택하세요</option>
-          {teams.map(team => (
-            <option key={team.id} value={team.id}>
-              {team.name}
-            </option>
-          ))}
-        </select>
+        <button onClick={handleUpdateTeam}>
+          {team ? '팀 이름 수정' : '팀 생성'}
+        </button>
       </div>
 
       {/* 슬롯 섹션 */}
@@ -194,11 +168,11 @@ const MyPokemon = () => {
 
       {/* 포켓몬 리스트 */}
       <h2>보유한 포켓몬</h2>
-      <div className="pokemon-list">
+      <div className="my-pokemon-list">
         {pokemons.map((pokemon) => (
           <div
             key={pokemon.id}
-            className="pokemon-item"
+            className="my-pokemon-item"
             onClick={() => handleAddToSlot(pokemon)}
           >
             <img src={`http://localhost:5000${pokemon.image_path}`} alt={pokemon.name} />

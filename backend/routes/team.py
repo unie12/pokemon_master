@@ -34,16 +34,6 @@ def get_user_pokemons(user_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# @team_bp.route('/gacha', methods=['POST'])
-# def perform_gacha():
-#     """포켓몬 뽑기"""
-#     user_id = request.json.get('user_id')
-#     try:
-#         result = team_service.gacha(user_id)
-#         return jsonify(result)
-#     except Exception as e:
-#         return jsonify({"error": str(e)}), 500
-
 @team_bp.route('/gacha', methods=['POST'])
 def perform_gacha():
     user_id = request.json.get('user_id')
@@ -116,8 +106,8 @@ def add_pokemon_to_team(team_id):
 #             return {"message": "Pokemon added to team successfully"}
     
 
-@team_bp.route('/teams/<int:team_id>/pokemons', methods=['GET'])
-def get_team_pokemons(team_id):
+@team_bp.route('/teams/<int:team_id>/slots', methods=['GET'])
+def get_team_slots(team_id):
     """팀의 포켓몬 슬롯 정보 조회"""
     try:
         result = team_service.get_team_pokemons(team_id)
@@ -156,23 +146,44 @@ def create_team():
             "error": str(e)
         }), 500
             
-@team_bp.route('/teams/<int:user_id>', methods=['GET'])
-def get_user_teams(user_id):
-    """사용자의 모든 팀 조회"""
+@team_bp.route('/teams/<int:user_id>/team', methods=['GET'])
+def get_user_team(user_id):
+    """사용자의 단일 팀 조회"""
     try:
-        result = team_service.get_teams(user_id)
+        result = team_service.get_user_team(user_id)
         if not result:
             return jsonify({
                 "success": True,
-                "teams": []  # 팀이 없는 경우 빈 배열 반환
+                "team": None
             })
         return jsonify({
             "success": True,
-            "teams": result
+            "team": result
         })
     except Exception as e:
-        print(f"Error in get_user_teams: {str(e)}")  # 디버깅용 로그 추가
+        print(f"Error in get_user_team: {str(e)}")
         return jsonify({
             "success": False,
             "error": str(e)
         }), 500
+        
+# @team_bp.route('/teams/<int:user_id>', methods=['GET'])
+# def get_user_teams(user_id):
+#     """사용자의 모든 팀 조회"""
+#     try:
+#         result = team_service.get_teams(user_id)
+#         if not result:
+#             return jsonify({
+#                 "success": True,
+#                 "teams": []  # 팀이 없는 경우 빈 배열 반환
+#             })
+#         return jsonify({
+#             "success": True,
+#             "teams": result
+#         })
+#     except Exception as e:
+#         print(f"Error in get_user_teams: {str(e)}")  # 디버깅용 로그 추가
+#         return jsonify({
+#             "success": False,
+#             "error": str(e)
+#         }), 500

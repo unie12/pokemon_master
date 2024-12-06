@@ -91,6 +91,16 @@ export const rankingApi = {
 };
 
 export const teamApi = {
+  getUserTeam: async (userId) => {
+    try {
+      const response = await axios.get(`${API_URL}/teams/${userId}/team`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching user team:", error);
+      throw error;
+    }
+  },
+
   getTeamTypeAnalysis: async (teamId) => {
     try {
       const response = await axios.get(`${API_URL}/teams/${teamId}/type-analysis`);
@@ -157,7 +167,10 @@ export const teamApi = {
 
   getTeamPokemons: async (teamId) => {
     try {
-      const response = await axios.get(`${API_URL}/teams/${teamId}/pokemons`);
+      const response = await axios.get(`${API_URL}/teams/${teamId}/slots`);
+      if (!response.data.success) {
+        throw new Error(response.data.error || 'Failed to fetch team slots');
+      }
       return response.data;
     } catch (error) {
       console.error("Error fetching team pokemons:", error);
