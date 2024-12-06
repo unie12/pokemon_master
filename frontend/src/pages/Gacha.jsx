@@ -100,6 +100,12 @@ const Gacha = () => {
     await getRandomPokemon();
   };
 
+  const handlePokemonClick = () => {
+    if (pokemon) {
+      navigate(`/pokemon/${pokemon.id}`); // `pokemon.id`는 API 응답에 따라 수정 필요
+    }
+  };
+
 
   return (
     <div className="gacha-container">

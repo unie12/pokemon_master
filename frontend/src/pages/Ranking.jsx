@@ -30,6 +30,11 @@ const Ranking = () => {
         fetchRankings(currentPage);
     }, [currentPage]);
 
+    useEffect(() => {
+        setSelectedTeam(null);
+        setIsComparing(false);
+    }, []);
+
     const fetchRankings = async (page) => {
         if (isLoading) return;
         setIsLoading(true);
@@ -52,8 +57,8 @@ const Ranking = () => {
         try {
             const comparison = await rankingApi.compareTeams(teamId);
             if (comparison) {
-                setSelectedTeam(comparison);
                 setIsComparing(true);
+                setTimeout(() => setSelectedTeam(comparison), 0);
             }
         } catch (error) {
             console.error('팀 비교 실패:', error);

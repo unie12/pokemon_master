@@ -76,18 +76,18 @@ def create_tables(cur):
             t.team_name,
             u.username,
             u.user_id,
-            SUM(p.total) as total_stats,
-            SUM(p.hp) as total_hp,
-            SUM(p.attack) as total_attack,
-            SUM(p.defense) as total_defense,
-            SUM(p.sp_attack) as total_sp_attack,
-            SUM(p.sp_defense) as total_sp_defense,
-            SUM(p.speed) as total_speed,
+            COALESCE(SUM(p.total), 0) as total_stats,
+            COALESCE(SUM(p.hp), 0) as total_hp,
+            COALESCE(SUM(p.attack), 0) as total_attack,
+            COALESCE(SUM(p.defense), 0) as total_defense,
+            COALESCE(SUM(p.sp_attack), 0) as total_sp_attack,
+            COALESCE(SUM(p.sp_defense), 0) as total_sp_defense,
+            COALESCE(SUM(p.speed), 0) as total_speed,
             COUNT(tp.pokemon_id) as pokemon_count
         FROM Team t
         JOIN Users u ON t.user_id = u.user_id
-        JOIN TeamPokemon tp ON t.team_id = tp.team_id
-        JOIN Pokemon p ON tp.pokemon_id = p.id
+        LEFT JOIN TeamPokemon tp ON t.team_id = tp.team_id
+        LEFT JOIN Pokemon p ON tp.pokemon_id = p.id
         GROUP BY t.team_id, t.team_name, u.username, u.user_id;
     """)
 
@@ -136,7 +136,7 @@ def create_tables(cur):
         EXECUTE FUNCTION check_gacha_cooldown();
     """)
 
-    # OLAP View 생성
+    # view rollup 생성
     cur.execute("""
         CREATE OR REPLACE VIEW team_type_analysis AS
         SELECT 
@@ -180,11 +180,11 @@ def import_pokemon_data():
         # 테이블 생성
         create_tables(cur)
         
-        # 데이터 일괄 삽입을 위한 준비
+        # 포켓몬 데이터 테이블에 삽입
         data = [
             (
-                int(row['id']),             # 이미지 번호 기반 ID
-                int(row['Index']),          # 원본 도감 번호
+                int(row['id']),            
+                int(row['Index']),      
                 row['Name'],
                 row['Type 1'],
                 row['Type 2'] if pd.notna(row['Type 2']) else None,
@@ -200,7 +200,6 @@ def import_pokemon_data():
             for _, row in df.iterrows()
         ]
         
-        # execute_values를 사용한 대량 삽입
         execute_values(cur, """
             INSERT INTO Pokemon (
                 id, pokedex_number, name, type1, type2, total,

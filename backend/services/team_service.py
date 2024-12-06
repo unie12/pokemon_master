@@ -11,52 +11,6 @@ class TeamService:
         }
         self.all_types = list(self.type_mapping.keys())
 
-    # def get_team_type_analysis(self, team_id):
-    #     with self.get_db_connection() as conn:
-    #         with conn.cursor() as cur:
-    #             cur.execute("""
-    #                 WITH team_types AS (
-    #                     SELECT 
-    #                         ARRAY_AGG(DISTINCT p.type1) FILTER (WHERE p.type1 IS NOT NULL) as type1_array,
-    #                         ARRAY_AGG(DISTINCT p.type2) FILTER (WHERE p.type2 IS NOT NULL) as type2_array
-    #                     FROM Team t
-    #                     JOIN TeamPokemon tp ON t.team_id = tp.team_id
-    #                     JOIN Pokemon p ON tp.pokemon_id = p.id
-    #                     WHERE t.team_id = %s
-    #                 )
-    #                 SELECT 
-    #                     type1_array,
-    #                     type2_array,
-    #                     ARRAY(
-    #                         SELECT t.type_name
-    #                         FROM unnest(%s::text[]) AS t(type_name)
-    #                         WHERE t.type_name NOT IN (
-    #                             SELECT unnest(type1_array || type2_array)
-    #                             FROM team_types
-    #                         )
-    #                     ) as missing_types
-    #                 FROM team_types
-    #             """, (team_id, self.all_types))
-                
-    #             result = cur.fetchone()
-    #             if not result:
-    #                 return None
-
-    #             present_types = list(set(result[0] or [] + result[1] or []))
-    #             missing_types = result[2] or []
-
-    #             # 타입을 한글로 변환
-    #             present_types = [self.type_mapping[t] for t in present_types]
-    #             missing_types = [self.type_mapping[t] for t in missing_types]
-
-    #             return {
-    #                 'success': True,
-    #                 'type_analysis': {
-    #                     'present_types': present_types,
-    #                     'missing_types': missing_types
-    #                 }
-    #             }
-
     def gacha(self, user_id):
         with self.get_db_connection() as conn:
             with conn.cursor() as cur:

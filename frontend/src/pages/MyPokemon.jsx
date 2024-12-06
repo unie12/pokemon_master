@@ -24,45 +24,53 @@ const MyPokemon = () => {
   useEffect(() => {
     const fetchData = async () => {
       if (!user?.user_id) return;
-  
       try {
         const [teamResponse, pokemonsResponse] = await Promise.all([
           teamApi.getUserTeam(user.user_id),
           teamApi.getMyPokemons(user.user_id)
         ]);
   
+        // 포켓몬 데이터 설정
+        if (pokemonsResponse.pokemons) {
+          setPokemons(pokemonsResponse.pokemons);
+          setFilteredPokemons(pokemonsResponse.pokemons); // 초기 필터링된 포켓몬 설정
+        }
+  
         if (teamResponse.team) {
           setTeam(teamResponse.team);
           setTeamName(teamResponse.team.name);
           
-          // 팀 통계, 슬롯, 타입 분석 정보 가져오기
-          const [slotsResponse, statsResponse, typeAnalysisResponse] = await Promise.all([
-            teamApi.getTeamPokemons(teamResponse.team.id),
-            teamApi.getTeamStats(teamResponse.team.id),
-            teamApi.getTeamTypeAnalysis(teamResponse.team.id)
-          ]);
+          try {
+            const [slotsResponse, statsResponse, typeAnalysisResponse] = await Promise.all([
+              teamApi.getTeamPokemons(teamResponse.team.id),
+              teamApi.getTeamStats(teamResponse.team.id),
+              teamApi.getTeamTypeAnalysis(teamResponse.team.id)
+            ]);
   
-          if (slotsResponse.success && slotsResponse.slots) {
-            setSlots(slotsResponse.slots);
+            if (slotsResponse.success) {
+              setSlots(slotsResponse.slots);
+            }
+            setTeamStats(statsResponse.success ? statsResponse.stats : {
+              total_stats: 0,
+              total_hp: 0,
+              total_attack: 0,
+              total_defense: 0,
+              total_sp_attack: 0,
+              total_sp_defense: 0,
+              total_speed: 0,
+              pokemon_count: 0
+            });
+            setTeamTypeAnalysis(typeAnalysisResponse);
+          } catch (error) {
+            console.error("Error fetching team details:", error);
           }
-
-          if (statsResponse.success) {
-            setTeamStats(statsResponse.stats);
-          }
-
-          setTeamTypeAnalysis(typeAnalysisResponse);
-        }
-  
-        if (pokemonsResponse.pokemons) {
-          setPokemons(pokemonsResponse.pokemons);
         }
       } catch (error) {
         console.error("Error fetching data:", error);
       }
     };
-  
     fetchData();
-  }, [user]);
+  }, [user]); // slots 제거, user만 의존성으로 설정
 
   const handleUpdateTeam = async () => {
     if (!teamName.trim()) {
@@ -86,52 +94,69 @@ const MyPokemon = () => {
       alert("팀을 먼저 생성해주세요.");
       return;
     }
-
+    
     const emptySlotIndex = slots.findIndex(slot => slot === null);
     if (emptySlotIndex === -1) {
-      alert("모든 슬롯이 채워졌습니다. 기존 슬롯에서 포켓몬을 제거해주세요.");
+      alert("모든 슬롯이 채워졌습니다.");
       return;
     }
-
+  
     try {
       const response = await teamApi.addPokemonToTeam(
-        team.id,
-        pokemon.id,
+        team.id, 
+        pokemon.id, 
         emptySlotIndex + 1
       );
-
+  
       if (response.success) {
-        // 즉시 UI 업데이트
+        // 슬롯 업데이트
         setSlots(prev => {
           const newSlots = [...prev];
-          newSlots[emptySlotIndex] = {
-            id: pokemon.id,
-            name: pokemon.name,
-            type1: pokemon.type1,
-            type2: pokemon.type2,
-            image_path: pokemon.image_path
-          };
+          newSlots[emptySlotIndex] = pokemon;
           return newSlots;
         });
+  
+        // 실시간 통계 및 타입 분석 업데이트
+        const [statsResponse, typeAnalysisResponse] = await Promise.all([
+          teamApi.getTeamStats(team.id),
+          teamApi.getTeamTypeAnalysis(team.id)
+        ]);
+  
+        if (statsResponse.success) {
+          setTeamStats(statsResponse.stats);
+        }
+        setTeamTypeAnalysis(typeAnalysisResponse);
       }
     } catch (error) {
       console.error("Error adding pokemon:", error);
-      alert(error.message || "포켓몬 추가 중 오류가 발생했습니다.");
+      alert(error.message);
     }
   };
-
+  
   const handleRemoveFromSlot = async (index) => {
     if (!team) return;
-
+    
     try {
       const response = await teamApi.removePokemonFromTeam(team.id, index + 1);
+      
       if (response.success) {
-        // 즉시 UI 업데이트
+        // 슬롯 업데이트
         setSlots(prev => {
           const newSlots = [...prev];
           newSlots[index] = null;
           return newSlots;
         });
+  
+        // 실시간 통계 및 타입 분석 업데이트
+        const [statsResponse, typeAnalysisResponse] = await Promise.all([
+          teamApi.getTeamStats(team.id),
+          teamApi.getTeamTypeAnalysis(team.id)
+        ]);
+  
+        if (statsResponse.success) {
+          setTeamStats(statsResponse.stats);
+        }
+        setTeamTypeAnalysis(typeAnalysisResponse);
       }
     } catch (error) {
       console.error("Error removing pokemon:", error);
