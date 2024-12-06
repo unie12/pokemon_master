@@ -73,7 +73,6 @@ const Ranking = () => {
                             <th>트레이너</th>
                             <th>포켓몬</th>
                             <th>총 스탯</th>
-                            <th>포켓몬 수</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -105,7 +104,6 @@ const Ranking = () => {
                                     </div>
                                 </td>
                                 <td>{rank.total_stats}</td>
-                                <td>{rank.pokemon_count}</td>
                             </tr>
                         ))}
                     </tbody>

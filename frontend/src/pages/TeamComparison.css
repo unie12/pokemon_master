@@ -11,7 +11,7 @@
 
 .modal-content {
     background-color: white;
-    padding: 3rem;
+    padding: 2rem;
     border-radius: 16px;
     width: 95%;
     max-width: 1600px;
@@ -24,6 +24,7 @@
 /* Single team view */
 .single-team-view {
     max-width: 800px;
+    max-height: 800px;
     margin: 0 auto;
     padding: 2rem;
     display: flex;
@@ -31,13 +32,20 @@
     align-items: center;
 }
 
-/* Team layout */
+/* Team layout - 단일 팀일 때와 비교할 때 구분 */
 .teams-container {
     display: grid;
-    grid-template-columns: minmax(500px, 1fr) 350px minmax(500px, 1fr);
     gap: 2rem;
     padding: 1.5rem;
     align-items: start;
+}
+.teams-container.comparison {
+    grid-template-columns: minmax(500px, 1fr) 350px minmax(500px, 1fr);
+}
+.teams-container.single {
+    grid-template-columns: 1fr;
+    max-width: 1000px;
+    margin: 0 auto;
 }
 
 /* Stats comparison */
@@ -82,17 +90,17 @@
 .team-list {
     display: flex;
     flex-direction: column;
+    gap: 2rem;
     width: 100%;
-    max-width: 500px;
+    max-width: 800px;
     margin: 2rem auto;
 }
 
 .pokemon-row {
     display: flex;
     justify-content: center;
-    gap: 2rem;
+    gap: 3rem;
 }
-
 .pokemon-row.front {
     margin-top: 1rem;
 }
@@ -138,23 +146,28 @@
 }
 
 /* Pokemon info */
-.pokemon-info {
+.comparsion-pokemon-info {
     text-align: center;
-    margin-top: 1rem;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
 }
 
-.pokemon-name {
-    display: block;
-    font-weight: 00;
-    font-size: 0.7rem;
+.comparison-pokemon-name {
+    margin-top: 10px;
+    font-weight: 600;
+    font-size: 0.8rem;
     color: #333;
 }
 
-.pokemon-type {
-    display: block;
-    font-size: 0.8rem;
+.comparision-pokemon-type {
+    font-size: 0.9rem;
     color: #666;
-    margin-top: 0.25rem;
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: -20px;
 }
 
 /* Team sections */
@@ -203,12 +216,10 @@
 }
 
 .type-analysis {
-    margin: 1.5rem 0;
-    padding: 1rem;
-    background: #f8f9fa;
-    border-radius: 12px;
+    width: 100%;
+    max-width: 600px;
+    margin: 2rem 0;
 }
-
 .type-section {
     margin-bottom: 1rem;
 }

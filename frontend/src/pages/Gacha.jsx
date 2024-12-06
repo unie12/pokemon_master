@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { teamApi } from "../services/api"; // gacha API 추가됨
 import GachaIcon from "../assets/images/gachaicon.png";
@@ -9,9 +9,56 @@ const Gacha = () => {
   const [pokemon, setPokemon] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [cooldown, setCooldown] = useState(null);
+  const [timer, setTimer] = useState(null);
   const [showPokemon, setShowPokemon] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  useEffect(() => {
+    let interval;
+    if (timer) {
+      interval = setInterval(() => {
+        setTimer(prevTimer => {
+          if (prevTimer <= 1) {
+            setCooldown(null);
+            setError(null);
+            return null;
+          }
+          return prevTimer - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [timer]);
+
+  const formatTime = (seconds) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${hours}시간 ${minutes}분 ${secs}초`;
+  };
+
+  const handleCooldownError = (errorMsg) => {
+    try {
+      // COOLDOWN: 이후의 JSON 문자열 추출
+      const jsonStr = errorMsg.split('COOLDOWN:')[1].trim();
+      // PostgreSQL의 에러 컨텍스트 제거
+      const cleanJsonStr = jsonStr.split('CONTEXT:')[0].trim();
+      const cooldownData = JSON.parse(cleanJsonStr);
+
+      const totalSeconds =
+        (parseInt(cooldownData.hours) * 3600) +
+        (parseInt(cooldownData.minutes) * 60) +
+        parseInt(cooldownData.seconds);
+
+      setTimer(totalSeconds);
+      setCooldown(formatTime(totalSeconds));
+    } catch (e) {
+      console.error('Error parsing cooldown:', e);
+      setError('가챠 쿨다운 중입니다.');
+    }
+  };
 
   const getRandomPokemon = async () => {
     if (!user?.user_id) {
@@ -24,16 +71,19 @@ const Gacha = () => {
       setError(null);
       const response = await teamApi.gacha(user.user_id);
 
-      if (response.error) {
-        setError(response.error);
+      if (!response.success) {
+        if (response.error.includes('COOLDOWN:')) {
+          handleCooldownError(response.error);
+        } else {
+          setError(response.error);
+        }
         return;
       }
 
-      setPokemon(response.pokemon); 
+      setPokemon(response.pokemon);
       setShowPokemon(true);
     } catch (err) {
-      setError("Failed to fetch random Pokémon");
-      console.error(err);
+      setError("포켓몬 뽑기에 실패했습니다.");
     } finally {
       setLoading(false);
     }
@@ -50,14 +100,6 @@ const Gacha = () => {
     await getRandomPokemon();
   };
 
-  const handlePokemonClick = () => {
-    if (pokemon) {
-      navigate(`/pokemon/${pokemon.id}`); // `pokemon.id`는 API 응답에 따라 수정 필요
-    }
-  };
-
-  if (loading) return <div className="loading">Loading...</div>;
-  if (error) return <div className="error">{error}</div>;
 
   return (
     <div className="gacha-container">
@@ -71,10 +113,22 @@ const Gacha = () => {
           <img
             src={GachaIcon}
             alt="Gacha Ball"
-            className="gacha-ball"
-            onClick={handleBallClick}
+            className={`gacha-ball ${loading ? 'spinning' : ''} ${cooldown ? 'disabled' : ''}`}
+            onClick={!loading && !cooldown ? handleBallClick : undefined}
           />
+          {cooldown && (
+            <div className="cooldown-timer">
+              다음 가챠까지 남은 시간:<br />
+              {cooldown}
+            </div>
+          )}
         </div>
+
+        {error && !cooldown && (
+          <div className="error-message">
+            {error}
+          </div>
+        )}
 
         {showPokemon && pokemon && (
           <>

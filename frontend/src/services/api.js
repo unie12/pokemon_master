@@ -128,7 +128,11 @@ export const teamApi = {
       });
       return response.data;
     } catch (error) {
-      console.error("Gacha request error:", error);
+      // 에러 응답에서 메시지 추출
+      const errorResponse = error.response?.data;
+      if (errorResponse && !errorResponse.success) {
+        return errorResponse;  // 에러 응답을 그대로 반환
+      }
       throw error;
     }
   },
@@ -199,6 +203,15 @@ export const teamApi = {
       return response.data;
     } catch (error) {
       console.error("Error removing pokemon from team:", error);
+      throw error;
+    }
+  },
+  getTeamStats: async (teamId) => {
+    try {
+      const response = await axios.get(`${API_URL}/teams/${teamId}/stats`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching team stats:", error);
       throw error;
     }
   }

@@ -43,9 +43,16 @@ def perform_gacha():
             "message": result["message"]
         })
     except Exception as e:
+        error_message = str(e)
+        # 쿨다운 에러 메시지 처리
+        if '가챠 쿨다운:' in error_message:
+            return jsonify({
+                "success": False,
+                "error": error_message
+            }), 400  # 400 Bad Request로 변경
         return jsonify({
             "success": False,
-            "error": str(e)
+            "error": error_message
         }), 500
 
 @team_bp.route('/teams/<int:team_id>/add-pokemon', methods=['POST'])
@@ -122,4 +129,24 @@ def get_user_team(user_id):
         return jsonify({
             "success": False,
             "error": str(e)
+        }), 500
+
+@team_bp.route('/teams/<int:team_id>/stats', methods=['GET'])
+def get_team_stats(team_id):
+    """팀 통계 정보 조회"""
+    try:
+        result = team_service.get_team_statistics(team_id)
+        if not result:
+            return jsonify({
+                'success': False,
+                'error': 'Team not found'
+            }), 404
+        return jsonify({
+            'success': True,
+            'stats': result
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
         }), 500

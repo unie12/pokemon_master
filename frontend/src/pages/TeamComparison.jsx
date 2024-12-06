@@ -1,31 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { rankingApi, teamApi } from '../services/api';
+import { teamApi } from '../services/api';
 import { TYPE_MAPPING } from '../utils/typeMapping.js';
 import './TeamComparison.css';
 
 const TeamComparison = ({ selectedTeam, onClose }) => {
     const { user } = useAuth();
     const [myTeam, setMyTeam] = useState(null);
-    const [typeAnalysis, setTypeAnalysis] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
 
     const handleClickOutside = (event) => {
         if (event.target.classList.contains('team-comparison-modal')) {
-            onClose();
+          onClose();
         }
-    };
-    
+      };
+
     useEffect(() => {
         const handleEsc = (event) => {
             if (event.key === 'Escape') {
                 onClose();
             }
         };
-
         window.addEventListener('keydown', handleEsc);
         document.addEventListener('mousedown', handleClickOutside);
-
         return () => {
             window.removeEventListener('keydown', handleEsc);
             document.removeEventListener('mousedown', handleClickOutside);
@@ -34,83 +31,94 @@ const TeamComparison = ({ selectedTeam, onClose }) => {
 
     useEffect(() => {
         const fetchTeamData = async () => {
-            if (user && selectedTeam && user.user_id !== selectedTeam.user_id) {
-                setIsLoading(true);
-                try {
-                    // 내 팀과 상대 팀의 타입 분석을 동시에 가져옴
-                    const [myTeamResponse, myTypeAnalysis, opponentTypeAnalysis] = await Promise.all([
-                        rankingApi.compareTeams(user.user_id),
-                        teamApi.getTeamTypeAnalysis(user.user_id),
-                        teamApi.getTeamTypeAnalysis(selectedTeam.team_id)
+            if (!selectedTeam) return;
+
+            setIsLoading(true);
+            try {
+                // 단일 팀 뷰일 경우
+                if (!user || user.user_id === selectedTeam.user_id) {
+                    const [stats, typeAnalysis, pokemons] = await Promise.all([
+                        teamApi.getTeamStats(selectedTeam.team_id),
+                        teamApi.getTeamTypeAnalysis(selectedTeam.team_id),
+                        teamApi.getTeamPokemons(selectedTeam.team_id)
                     ]);
-    
-                    // 내 팀 데이터에 타입 분석 추가
-                    setMyTeam({
-                        ...myTeamResponse,
-                        type_analysis: myTypeAnalysis
-                    });
-    
-                    // 상대 팀 데이터에 타입 분석 추가
-                    selectedTeam.type_analysis = opponentTypeAnalysis;
-                    
-                } catch (error) {
-                    console.error('Data fetch failed:', error);
-                } finally {
-                    setIsLoading(false);
+
+                    if (stats.success && pokemons.success) {
+                        selectedTeam.stats = stats.stats;
+                        selectedTeam.type_analysis = typeAnalysis.type_analysis;
+                        selectedTeam.pokemons = pokemons.slots.filter(Boolean);
+                    }
                 }
-            } else if (selectedTeam) {
-                // 단일 팀 뷰일 때는 해당 팀의 타입 분석만 가져옴
-                setIsLoading(true);
-                try {
-                    const typeAnalysis = await teamApi.getTeamTypeAnalysis(selectedTeam.team_id);
-                    selectedTeam.type_analysis = typeAnalysis;
-                } catch (error) {
-                    console.error('Data fetch failed:', error);
-                } finally {
-                    setIsLoading(false);
+                // 팀 비교 뷰일 경우
+                else {
+                    const [
+                        myTeamStats,
+                        myTypeAnalysis,
+                        myPokemons,
+                        opponentStats,
+                        opponentTypeAnalysis,
+                        opponentPokemons
+                    ] = await Promise.all([
+                        teamApi.getTeamStats(user.user_id),
+                        teamApi.getTeamTypeAnalysis(user.user_id),
+                        teamApi.getTeamPokemons(user.user_id),
+                        teamApi.getTeamStats(selectedTeam.team_id),
+                        teamApi.getTeamTypeAnalysis(selectedTeam.team_id),
+                        teamApi.getTeamPokemons(selectedTeam.team_id)
+                    ]);
+
+                    if (myTeamStats.success && myPokemons.success) {
+                        setMyTeam({
+                            ...myTeamStats.stats,
+                            type_analysis: myTypeAnalysis.type_analysis,
+                            pokemons: myPokemons.slots.filter(Boolean)
+                        });
+                    }
+
+                    if (opponentStats.success && opponentPokemons.success) {
+                        selectedTeam.stats = opponentStats.stats;
+                        selectedTeam.type_analysis = opponentTypeAnalysis.type_analysis;
+                        selectedTeam.pokemons = opponentPokemons.slots.filter(Boolean);
+                    }
                 }
+            } catch (error) {
+                console.error('Data fetch failed:', error);
+            } finally {
+                setIsLoading(false);
             }
         };
+
         fetchTeamData();
     }, [user, selectedTeam]);
 
+    const renderTypeAnalysis = (types) => {
+        if (!types?.present_types || !types?.missing_types) return null;
 
-    const renderTypeAnalysis = (types) => (
-        <div className="type-analysis">
-            <div className="type-section">
-                <h4>보유 타입</h4>
-                <div className="type-tags">
-                    {types.present_types.map(type => (
-                        <span key={type} className={`type-tag ${type.toLowerCase()}`}>
-                            {TYPE_MAPPING[type]}
-                        </span>
-                    ))}
-                </div>
-            </div>
-            <div className="type-section">
-                <h4>미보유 타입</h4>
-                <div className="type-tags">
-                    {types.missing_types.map(type => (
-                        <span key={type} className={`type-tag ${type.toLowerCase()}`}>
-                            {TYPE_MAPPING[type]}
-                        </span>
-                    ))}
-                </div>
-            </div>
-            {types.weaknesses && (
+        return (
+            <div className="type-analysis">
                 <div className="type-section">
-                    <h4>취약 타입</h4>
+                    <h4>보유 타입</h4>
                     <div className="type-tags">
-                        {types.weaknesses.map(type => (
-                            <span key={type} className={`type-tag weakness ${type.toLowerCase()}`}>
+                        {types.present_types.map(type => (
+                            <span key={type} className={`type-tag ${type.toLowerCase()}`}>
                                 {TYPE_MAPPING[type]}
                             </span>
                         ))}
                     </div>
                 </div>
-            )}
-        </div>
-    );
+                <div className="type-section">
+                    <h4>미보유 타입</h4>
+                    <div className="type-tags">
+                        {types.missing_types.map(type => (
+                            <span key={type} className={`type-tag ${type.toLowerCase()}`}>
+                                {TYPE_MAPPING[type]}
+                            </span>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
+    };
 
     const renderPokemonList = (pokemons, isMyTeam = false) => (
         <div className="team-list">
@@ -118,7 +126,7 @@ const TeamComparison = ({ selectedTeam, onClose }) => {
                 {pokemons.slice(0, 3).map((pokemon) => (
                     <div key={pokemon.id} className="team-pokemon-card">
                         <div className="pokemon-image-container">
-                            <img 
+                            <img
                                 src={`http://localhost:5000/static/images/${pokemon.id}.png`}
                                 alt={pokemon.name}
                                 className={isMyTeam ? 'mirror-image' : ''}
@@ -128,11 +136,12 @@ const TeamComparison = ({ selectedTeam, onClose }) => {
                                 }}
                             />
                         </div>
-                        <div className="pokemon-info">
-                            <span className="pokemon-name">{pokemon.name}</span>
-                            <span className="pokemon-type">
-                                {TYPE_MAPPING[pokemon.type1]} {pokemon.type2 && `/ ${TYPE_MAPPING[pokemon.type2]}`}
-                            </span>
+                        <div className="comparsion-pokemon-info">
+                            <span className="comparison-pokemon-name">{pokemon.name}</span>
+                            <div className="comparision-pokemon-type">
+                                <span>{TYPE_MAPPING[pokemon.type1]}</span>
+                                {pokemon.type2 &&<span>/ {TYPE_MAPPING[pokemon.type2]}</span>}
+                            </div>
                         </div>
                     </div>
                 ))}
@@ -141,7 +150,7 @@ const TeamComparison = ({ selectedTeam, onClose }) => {
                 {pokemons.slice(3, 5).map((pokemon) => (
                     <div key={pokemon.id} className="team-pokemon-card">
                         <div className="pokemon-image-container">
-                            <img 
+                            <img
                                 src={`http://localhost:5000/static/images/${pokemon.id}.png`}
                                 alt={pokemon.name}
                                 className={isMyTeam ? 'mirror-image' : ''}
@@ -151,11 +160,12 @@ const TeamComparison = ({ selectedTeam, onClose }) => {
                                 }}
                             />
                         </div>
-                        <div className="pokemon-info">
-                            <span className="pokemon-name">{pokemon.name}</span>
-                            <span className="pokemon-type">
-                                {TYPE_MAPPING[pokemon.type1]} {pokemon.type2 && `/ ${TYPE_MAPPING[pokemon.type2]}`}
-                            </span>
+                        <div className="comparsion-pokemon-info">
+                            <span className="comparison-pokemon-name">{pokemon.name}</span>
+                            <div className="comparision-pokemon-type">
+                                <span>{TYPE_MAPPING[pokemon.type1]}</span>
+                                {pokemon.type2 &&<span>/ {TYPE_MAPPING[pokemon.type2]}</span>}
+                            </div>
                         </div>
                     </div>
                 ))}
@@ -178,44 +188,49 @@ const TeamComparison = ({ selectedTeam, onClose }) => {
         );
     };
 
-    const renderSingleTeamView = () => (
-        <div className="single-team-view">
-            <h3>{selectedTeam.username}의 팀</h3>
-            {renderPokemonList(selectedTeam.pokemons)}
-            {selectedTeam.type_analysis && renderTypeAnalysis(selectedTeam.type_analysis)}
+    const renderSingleTeamView = () => {
+        if (!selectedTeam?.stats || !selectedTeam?.pokemons) {
+            return <div>팀 정보를 불러올 수 없습니다.</div>;
+        }
 
-            <div className="team-stats">
-                <div className="stat-row">
-                    <label>HP</label>
-                    <span>{selectedTeam.total_hp}</span>
-                </div>
-                <div className="stat-row">
-                    <label>공격</label>
-                    <span>{selectedTeam.total_attack}</span>
-                </div>
-                <div className="stat-row">
-                    <label>방어</label>
-                    <span>{selectedTeam.total_defense}</span>
-                </div>
-                <div className="stat-row">
-                    <label>특수공격</label>
-                    <span>{selectedTeam.total_sp_attack}</span>
-                </div>
-                <div className="stat-row">
-                    <label>특수방어</label>
-                    <span>{selectedTeam.total_sp_defense}</span>
-                </div>
-                <div className="stat-row">
-                    <label>스피드</label>
-                    <span>{selectedTeam.total_speed}</span>
-                </div>
-                <div className="stat-row total">
-                    <label>총합</label>
-                    <span>{selectedTeam.total_stats}</span>
+        return (
+            <div className="single-team-view">
+                <h3>{selectedTeam.username}의 팀</h3>
+                {renderPokemonList(selectedTeam.pokemons)}
+                {selectedTeam.type_analysis && renderTypeAnalysis(selectedTeam.type_analysis)}
+                <div className="team-stats">
+                    <div className="stat-row">
+                        <label>HP</label>
+                        <span>{selectedTeam.stats.total_hp}</span>
+                    </div>
+                    <div className="stat-row">
+                        <label>공격</label>
+                        <span>{selectedTeam.stats.total_attack}</span>
+                    </div>
+                    <div className="stat-row">
+                        <label>방어</label>
+                        <span>{selectedTeam.stats.total_defense}</span>
+                    </div>
+                    <div className="stat-row">
+                        <label>특수공격</label>
+                        <span>{selectedTeam.stats.total_sp_attack}</span>
+                    </div>
+                    <div className="stat-row">
+                        <label>특수방어</label>
+                        <span>{selectedTeam.stats.total_sp_defense}</span>
+                    </div>
+                    <div className="stat-row">
+                        <label>스피드</label>
+                        <span>{selectedTeam.stats.total_speed}</span>
+                    </div>
+                    <div className="stat-row total">
+                        <label>총합</label>
+                        <span>{selectedTeam.stats.total_stats}</span>
+                    </div>
                 </div>
             </div>
-        </div>
-    );
+        );
+    };
 
     const renderComparisonView = () => {
         if (!myTeam) return <div>Loading...</div>;
@@ -246,8 +261,8 @@ const TeamComparison = ({ selectedTeam, onClose }) => {
 
     const renderTeamView = () => {
         if (!selectedTeam) return null;
-        return (!user || user.user_id === selectedTeam.user_id) 
-            ? renderSingleTeamView() 
+        return (!user || user.user_id === selectedTeam.user_id)
+            ? renderSingleTeamView()
             : renderComparisonView();
     };
 
@@ -257,7 +272,7 @@ const TeamComparison = ({ selectedTeam, onClose }) => {
         <div className="team-comparison-modal" onClick={handleClickOutside}>
             <div className="modal-content">
                 <button className="close-button" onClick={onClose}>×</button>
-                <div className="teams-container">
+                <div className={`teams-container ${(!user || user.user_id === selectedTeam.user_id) ? 'single' : 'comparison'}`}>
                     {renderTeamView()}
                 </div>
             </div>

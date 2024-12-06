@@ -17,6 +17,9 @@ const MyPokemon = () => {
   const [sortOrder, setSortOrder] = useState("asc");
   const [selectedTypes, setSelectedTypes] = useState([]);
   const [filteredPokemons, setFilteredPokemons] = useState([]);
+  const [teamStats, setTeamStats] = useState(null);
+  const [teamTypeAnalysis, setTeamTypeAnalysis] = useState(null);
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -32,18 +35,22 @@ const MyPokemon = () => {
           setTeam(teamResponse.team);
           setTeamName(teamResponse.team.name);
           
-          // 팀 ID로 팀 포켓몬 가져오기
-          const slotsResponse = await teamApi.getTeamPokemons(teamResponse.team.id);
-          console.log('Slots Response:', slotsResponse);
+          // 팀 통계, 슬롯, 타입 분석 정보 가져오기
+          const [slotsResponse, statsResponse, typeAnalysisResponse] = await Promise.all([
+            teamApi.getTeamPokemons(teamResponse.team.id),
+            teamApi.getTeamStats(teamResponse.team.id),
+            teamApi.getTeamTypeAnalysis(teamResponse.team.id)
+          ]);
   
-          // 응답 구조 확인 및 slots 설정
           if (slotsResponse.success && slotsResponse.slots) {
-            // slots 배열을 그대로 설정
             setSlots(slotsResponse.slots);
-          } else {
-            // 실패 시 기본 빈 슬롯으로 설정
-            setSlots(Array(6).fill(null));
           }
+
+          if (statsResponse.success) {
+            setTeamStats(statsResponse.stats);
+          }
+
+          setTeamTypeAnalysis(typeAnalysisResponse);
         }
   
         if (pokemonsResponse.pokemons) {
@@ -174,13 +181,87 @@ const MyPokemon = () => {
     setFilteredPokemons(filtered);
   }, [pokemons, sortBy, sortOrder, selectedTypes]);
 
+  // 팀 통계 표시 섹션 추가
+  const renderTeamStats = () => {
+    if (!teamStats) return null;
+  
+    return (
+      <div className="team-stats-section">
+        <h2>팀 통계</h2>
+        <div className="stats-grid">
+          <div className="stat-item">
+            <span>총 스탯:</span>
+            <span>{teamStats.total_stats}</span>
+          </div>
+          <div className="stat-item">
+            <span>총 HP:</span>
+            <span>{teamStats.total_hp}</span>
+          </div>
+          <div className="stat-item">
+            <span>총 공격력:</span>
+            <span>{teamStats.total_attack}</span>
+          </div>
+          <div className="stat-item">
+            <span>총 방어력:</span>
+            <span>{teamStats.total_defense}</span>
+          </div>
+          <div className="stat-item">
+            <span>총 특수공격:</span>
+            <span>{teamStats.total_sp_attack}</span>
+          </div>
+          <div className="stat-item">
+            <span>총 특수방어:</span>
+            <span>{teamStats.total_sp_defense}</span>
+          </div>
+          <div className="stat-item">
+            <span>총 스피드:</span>
+            <span>{teamStats.total_speed}</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderTypeAnalysis = () => {
+    if (!teamTypeAnalysis?.type_analysis) return null;  // null 체크 추가
+  
+    const { present_types, missing_types } = teamTypeAnalysis.type_analysis;
+  
+    return (
+      <div className="type-analysis-section">
+        <h3>타입 분석</h3>
+        <div className="analysis-type-grid">
+          <div className="type-category">
+            <h4>보유 타입</h4>
+            <div className="type-tags">
+              {present_types?.map(type => (
+                <span key={type} className={`type-tag ${type.toLowerCase()}`}>
+                  {TYPE_MAPPING[type]}
+                </span>
+              ))}
+            </div>
+          </div>
+          <div className="type-category">
+            <h4>미보유 타입</h4>
+            <div className="type-tags">
+              {missing_types?.map(type => (
+                <span key={type} className={`type-tag ${type.toLowerCase()}`}>
+                  {TYPE_MAPPING[type]}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="my-pokemon-container">
       <h1>내 포켓몬</h1>
 
       {/* 팀 이름 섹션 */}
       <div className="team-name-section">
-        <h2>팀 이름</h2>
         <input
           type="text"
           value={teamName}
@@ -216,6 +297,9 @@ const MyPokemon = () => {
           </div>
         ))}
       </div>
+
+      {team && renderTeamStats()}
+      {team && renderTypeAnalysis()}
 
       {/* FilterPanel 추가 */}
       <FilterPanel

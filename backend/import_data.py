@@ -68,6 +68,91 @@ def create_tables(cur):
         );
     """)
 
+    # team stat view 생성
+    cur.execute("""
+        CREATE OR REPLACE VIEW team_statistics AS
+        SELECT 
+            t.team_id,
+            t.team_name,
+            u.username,
+            u.user_id,
+            SUM(p.total) as total_stats,
+            SUM(p.hp) as total_hp,
+            SUM(p.attack) as total_attack,
+            SUM(p.defense) as total_defense,
+            SUM(p.sp_attack) as total_sp_attack,
+            SUM(p.sp_defense) as total_sp_defense,
+            SUM(p.speed) as total_speed,
+            COUNT(tp.pokemon_id) as pokemon_count
+        FROM Team t
+        JOIN Users u ON t.user_id = u.user_id
+        JOIN TeamPokemon tp ON t.team_id = tp.team_id
+        JOIN Pokemon p ON tp.pokemon_id = p.id
+        GROUP BY t.team_id, t.team_name, u.username, u.user_id;
+    """)
+
+    # Trigger 생성
+    cur.execute("""
+        CREATE OR REPLACE FUNCTION check_gacha_cooldown()
+        RETURNS TRIGGER AS $$
+        DECLARE
+            last_time TIMESTAMP;
+            time_diff INTERVAL;
+            remaining_time INTERVAL;
+        BEGIN
+            SELECT last_gacha_time INTO last_time
+            FROM Users 
+            WHERE user_id = NEW.user_id;
+            
+            IF last_time IS NOT NULL THEN
+                time_diff := NOW() - last_time;
+                IF time_diff < INTERVAL '24 hours' THEN
+                    remaining_time := INTERVAL '24 hours' - time_diff;
+                    RAISE EXCEPTION 'COOLDOWN:%', 
+                        jsonb_build_object(
+                            'hours', EXTRACT(HOUR FROM remaining_time)::INTEGER,
+                            'minutes', EXTRACT(MINUTE FROM remaining_time)::INTEGER,
+                            'seconds', FLOOR(EXTRACT(SECOND FROM remaining_time))::INTEGER
+                        )::text;
+                END IF;
+            END IF;
+            
+            UPDATE Users 
+            SET last_gacha_time = CURRENT_TIMESTAMP 
+            WHERE user_id = NEW.user_id;
+            
+            RETURN NEW;
+        END;
+        $$
+        LANGUAGE plpgsql;
+    """)
+
+    # Trigger 생성
+    cur.execute("""
+        DROP TRIGGER IF EXISTS gacha_cooldown_check ON UserPokemon;
+        CREATE TRIGGER gacha_cooldown_check
+        BEFORE INSERT ON UserPokemon
+        FOR EACH ROW
+        EXECUTE FUNCTION check_gacha_cooldown();
+    """)
+
+    # OLAP View 생성
+    cur.execute("""
+        CREATE OR REPLACE VIEW team_type_analysis AS
+        SELECT 
+            COALESCE(t.team_name, 'Total') as team_name,
+            COALESCE(p.type1, 'All Types') as type1,
+            COUNT(*) as pokemon_count,
+            AVG(p.total) as avg_total,
+            SUM(p.total) as total_power
+        FROM Team t
+        JOIN TeamPokemon tp ON t.team_id = tp.team_id
+        JOIN Pokemon p ON tp.pokemon_id = p.id
+        GROUP BY ROLLUP(t.team_name, p.type1)
+        ORDER BY team_name NULLS LAST, type1 NULLS LAST;
+    """)
+
+
 
     
 def import_pokemon_data():
