@@ -46,92 +46,263 @@ class TeamService:
                     'missing_types': missing_types
                 }
         
-    def get_team_details(self, team_id):
-        with self.get_db_connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute("""
-                    SELECT 
-                        t.team_id,
-                        t.team_name,
-                        u.username,
-                        u.user_id,
-                        json_build_object(
-                            'pokemon_details', (
-                                SELECT json_agg(json_build_object(
-                                    'id', p.id,
-                                    'name', p.name,
-                                    'type1', p.type1,
-                                    'type2', p.type2,
-                                    'slot', tp.slot_number,
-                                    'stats', json_build_object(
-                                        'hp', p.hp,
-                                        'attack', p.attack,
-                                        'defense', p.defense,
-                                        'sp_attack', p.sp_attack,
-                                        'sp_defense', p.sp_defense,
-                                        'speed', p.speed
-                                    )
-                                ) ORDER BY tp.slot_number)
-                                FROM TeamPokemon tp
-                                JOIN Pokemon p ON tp.pokemon_id = p.id
-                                WHERE tp.team_id = t.team_id
-                            ),
-                            'type_analysis', (
-                                SELECT json_build_object(
-                                    'present_types', present_types,
-                                    'missing_types', missing_types
-                                )
-                                FROM get_team_type_analysis(%s)
-                            )
-                        ) as team_data
-                    FROM Team t
-                    JOIN Users u ON t.user_id = u.user_id
-                    WHERE t.team_id = %s
-                """, (team_id, team_id))
+    # def get_team_details(self, team_id):
+    #     with self.get_db_connection() as conn:
+    #         with conn.cursor() as cur:
+    #             cur.execute("""
+    #                 SELECT 
+    #                     t.team_id,
+    #                     t.team_name,
+    #                     u.username,
+    #                     u.user_id
+    #                 FROM Team t
+    #                 JOIN Users u ON t.user_id = u.user_id
+    #                 WHERE t.team_id = %s
+    #             """, (team_id,))
+    #             team_info = cur.fetchone()
                 
-                return cur.fetchone()
+    #             if not team_info:
+    #                 return None
+                    
+    #             return {
+    #                 'id': team_info[0],
+    #                 'name': team_info[1],
+    #                 'username': team_info[2],
+    #                 'user_id': team_info[3]
+    #             }
             
 
     def gacha(self, user_id):
-        """랜덤 포켓몬을 뽑고 UserPokemon에 추가"""
         with self.get_db_connection() as conn:
             with conn.cursor() as cur:
-                # 랜덤 포켓몬 선택
+                try:
+                    cur.execute("""
+                        SELECT id, name, type1, type2, total
+                        FROM Pokemon 
+                        ORDER BY RANDOM() LIMIT 1
+                    """)
+                    pokemon = cur.fetchone()
+
+                    if not pokemon:
+                        raise Exception("No Pokémon found")
+
+                    pokemon_id, name, type1, type2, total = pokemon
+
+                    # 이미 보유한 포켓몬인지 확인
+                    cur.execute("""
+                        SELECT 1 FROM UserPokemon 
+                        WHERE user_id = %s AND pokemon_id = %s
+                    """, (user_id, pokemon_id))
+
+                    if cur.fetchone():
+                        raise Exception("You already own this Pokémon!")
+
+                    # UserPokemon에 포켓몬 추가
+                    cur.execute("""
+                        INSERT INTO UserPokemon (user_id, pokemon_id) 
+                        VALUES (%s, %s)
+                    """, (user_id, pokemon_id))
+                    conn.commit()
+
+                    return {
+                        "pokemon_id": pokemon_id,
+                        "name": name,
+                        "type1": type1,
+                        "type2": type2,
+                        "total": total,
+                        "image_path": f'/static/images/{pokemon_id}.png',
+                        "message": f"Successfully caught {name}!"
+                    }
+                except Exception as e:
+                    conn.rollback()
+                    raise e
+            
+    def get_user_pokemons(self, user_id):
+        """사용자가 소유한 모든 포켓몬 조회"""
+        with self.get_db_connection() as conn:
+            with conn.cursor() as cur:
                 cur.execute("""
-                    SELECT id, name, type1, type2, total, image_path
-                    FROM Pokemon 
-                    ORDER BY RANDOM() LIMIT 1
-                """)
-                pokemon = cur.fetchone()
+                    SELECT p.id, p.name, p.type1, p.type2
+                    FROM UserPokemon up
+                    JOIN Pokemon p ON up.pokemon_id = p.id
+                    WHERE up.user_id = %s
+                    ORDER BY p.id
+                """, (user_id,))
+                pokemons = cur.fetchall()
+                
+                return [{
+                    'id': pokemon[0],
+                    'name': pokemon[1],
+                    'type1': pokemon[2],
+                    'type2': pokemon[3],
+                    'image_path': f'/static/images/{pokemon[0]}.png'
+                } for pokemon in pokemons]
+            
+    def get_teams(self, user_id):
+        """사용자의 모든 팀 조회"""
+        with self.get_db_connection() as conn:
+            with conn.cursor() as cur:
+                try:
+                    cur.execute("""
+                        SELECT team_id, team_name, created_date
+                        FROM Team
+                        WHERE user_id = %s
+                        ORDER BY created_date DESC
+                    """, (user_id,))
+                    teams = cur.fetchall()
+                    
+                    if not teams:
+                        return []
+                    
+                    # 날짜 처리를 안전하게 수행
+                    return [{
+                        'id': team[0],
+                        'name': team[1],
+                        'created_date': team[2].strftime('%Y-%m-%d %H:%M:%S') if team[2] else None
+                    } for team in teams]
+                    
+                except Exception as e:
+                    print(f"Database error in get_teams: {str(e)}")
+                    conn.rollback()
+                    raise Exception(f"Failed to fetch teams: {str(e)}")
+                
+    def get_team_pokemons(self, team_id):
+        """특정 팀의 포켓몬 조회"""
+        with self.get_db_connection() as conn:
+            with conn.cursor() as cur:
+                try:
+                    cur.execute("""
+                        SELECT p.id, p.name, p.type1, p.type2, tp.slot_number
+                        FROM TeamPokemon tp
+                        JOIN Pokemon p ON tp.pokemon_id = p.id
+                        WHERE tp.team_id = %s
+                        ORDER BY tp.slot_number
+                    """, (team_id,))
+                    pokemons = cur.fetchall()
+                    
+                    slots = [None] * 6
+                    for pokemon in pokemons:
+                        slots[pokemon[4] - 1] = {
+                            'id': pokemon[0],
+                            'name': pokemon[1],
+                            'type1': pokemon[2],
+                            'type2': pokemon[3],
+                            'image_path': f'/static/images/{pokemon[0]}.png'
+                        }
+                    
+                    return {
+                        'success': True,
+                        'slots': slots
+                    }
+                except Exception as e:
+                    print(f"Error fetching team pokemons: {str(e)}")
+                    raise e
+            
+    def create_team(self, user_id, team_name):
+        """새로운 팀 생성"""
+        with self.get_db_connection() as conn:
+            with conn.cursor() as cur:
+                try:
+                    # 팀 이름 중복 검사
+                    cur.execute("""
+                        SELECT 1 FROM Team 
+                        WHERE user_id = %s AND team_name = %s
+                    """, (user_id, team_name))
+                    
+                    if cur.fetchone():
+                        raise Exception("Team name already exists")
 
-                if not pokemon:
-                    return {"error": "No Pokémon found"}
+                    # 팀 생성
+                    cur.execute("""
+                        INSERT INTO Team (user_id, team_name)
+                        VALUES (%s, %s)
+                        RETURNING team_id, team_name, created_date
+                    """, (user_id, team_name))
+                    
+                    team = cur.fetchone()
+                    conn.commit()
+                    
+                    return {
+                        'success': True,
+                        'team': {
+                            'id': team[0],
+                            'name': team[1],
+                            'created_date': team[2].isoformat() if team[2] else None
+                        },
+                        'message': 'Team created successfully'
+                    }
+                except Exception as e:
+                    conn.rollback()
+                    print(f"Error creating team: {str(e)}")  # 디버깅용 로그
+                    raise e
 
-                pokemon_id, name, type1, type2, total, image_path = pokemon
+    def remove_pokemon_from_team(self, team_id, slot_number):
+        """팀에서 포켓몬 제거"""
+        with self.get_db_connection() as conn:
+            with conn.cursor() as cur:
+                try:
+                    cur.execute("""
+                        DELETE FROM TeamPokemon
+                        WHERE team_id = %s AND slot_number = %s
+                        RETURNING pokemon_id
+                    """, (team_id, slot_number))
+                    
+                    result = cur.fetchone()
+                    if not result:
+                        raise Exception("Pokemon not found in the specified slot")
+                    
+                    conn.commit()
+                    return {
+                        'success': True,
+                        'message': 'Pokemon removed from team successfully'
+                    }
+                except Exception as e:
+                    conn.rollback()
+                    raise e
+                
+    def add_pokemon_to_team(self, team_id, pokemon_id, slot_number):
+        """팀에 포켓몬 추가"""
+        with self.get_db_connection() as conn:
+            with conn.cursor() as cur:
+                try:
+                    # 슬롯 유효성 검사
+                    if slot_number < 1 or slot_number > 6:
+                        return {
+                            "success": False,
+                            "error": "Invalid slot number"
+                        }
 
-                # 이미 보유한 포켓몬인지 확인
-                cur.execute("""
-                    SELECT 1 FROM UserPokemon 
-                    WHERE user_id = %s AND pokemon_id = %s
-                """, (user_id, pokemon_id))
+                    # 포켓몬 소유 여부 확인
+                    cur.execute("""
+                        SELECT user_id FROM Team WHERE team_id = %s
+                    """, (team_id,))
+                    team = cur.fetchone()
+                    
+                    cur.execute("""
+                        SELECT 1 FROM UserPokemon 
+                        WHERE user_id = %s AND pokemon_id = %s
+                    """, (team[0], pokemon_id))
+                    
+                    if not cur.fetchone():
+                        return {
+                            "success": False,
+                            "error": "You don't own this pokemon"
+                        }
 
-                if cur.fetchone():
-                    return {"error": "You already own this Pokémon!"}
-
-                # UserPokemon에 포켓몬 추가
-                cur.execute("""
-                    INSERT INTO UserPokemon (user_id, pokemon_id) 
-                    VALUES (%s, %s)
-                """, (user_id, pokemon_id))
-                conn.commit()
-
-                # 추가된 포켓몬 정보 반환
-                return {
-                    "pokemon_id": pokemon_id,
-                    "name": name,
-                    "type1": type1,
-                    "type2": type2,
-                    "total": total,
-                    "image_path": image_path,
-                    "message": f"Successfully caught {name}!"
-                }
+                    # 슬롯에 포켓몬 추가/업데이트
+                    cur.execute("""
+                        INSERT INTO TeamPokemon (team_id, pokemon_id, slot_number)
+                        VALUES (%s, %s, %s)
+                        ON CONFLICT (team_id, slot_number) 
+                        DO UPDATE SET pokemon_id = EXCLUDED.pokemon_id
+                        RETURNING *
+                    """, (team_id, pokemon_id, slot_number))
+                    
+                    conn.commit()
+                    return {
+                        "success": True,
+                        "message": "Pokemon added to team successfully"
+                    }
+                except Exception as e:
+                    conn.rollback()
+                    raise e

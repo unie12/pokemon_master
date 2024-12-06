@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { pokemonApi } from "../services/api"; // gacha API 추가됨
+import { teamApi } from "../services/api"; // gacha API 추가됨
 import GachaIcon from "../assets/images/gachaicon.png";
 import PokemonCard from "../components/PokemonCard";
 import "./Gacha.css";
@@ -18,7 +18,7 @@ const Gacha = () => {
       setError(null);
       const userId = 1; // 예시로 user_id를 1로 설정. 실제 구현에서는 인증 상태로부터 가져와야 함.
       // gacha API 호출
-      const response = await pokemonApi.gacha(userId);
+      const response = await teamApi.gacha(userId);
 
       if (response.error) {
         setError(response.error);

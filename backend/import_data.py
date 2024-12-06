@@ -56,6 +56,19 @@ def create_tables(cur):
             PRIMARY KEY (team_id, slot_number)
         );
     """)
+
+    # UserPokemon 테이블 생성
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS UserPokemon (
+            user_pokemon_id SERIAL PRIMARY KEY,
+            user_id INTEGER REFERENCES Users(user_id),
+            pokemon_id INTEGER REFERENCES Pokemon(id),
+            obtained_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(user_id, pokemon_id)
+        );
+    """)
+
+
     
 def import_pokemon_data():
     try:

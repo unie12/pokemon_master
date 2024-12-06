@@ -91,6 +91,16 @@ export const rankingApi = {
 };
 
 export const teamApi = {
+  getTeamTypeAnalysis: async (teamId) => {
+    try {
+      const response = await axios.get(`${API_URL}/teams/${teamId}/type-analysis`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching team type analysis:', error);
+      throw error;
+    }
+  },
+
   getMyPokemons: async (userId) => {
     try {
       const response = await axios.get(`${API_URL}/teams/${userId}/pokemons`);
@@ -128,4 +138,55 @@ export const teamApi = {
       throw error;
     }
   },
+
+  getTeams: async (userId) => {
+    try {
+      const response = await axios.get(`${API_URL}/teams/${userId}`);
+      if (!response.data.success) {
+        throw new Error(response.data.error);
+      }
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching teams:", error);
+      throw {
+        success: false,
+        error: error.response?.data?.error || error.message
+      };
+    }
+  },
+
+  getTeamPokemons: async (teamId) => {
+    try {
+      const response = await axios.get(`${API_URL}/teams/${teamId}/pokemons`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching team pokemons:", error);
+      throw error;
+    }
+  },
+
+  createTeam: async (userId, teamName) => {
+    try {
+      const response = await axios.post(`${API_URL}/teams`, {
+        user_id: userId,
+        team_name: teamName
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error creating team:", error);
+      throw error;
+    }
+  },
+
+  removePokemonFromTeam: async (teamId, slotNumber) => {
+    try {
+      const response = await axios.delete(
+        `${API_URL}/teams/${teamId}/pokemon/${slotNumber}`
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error removing pokemon from team:", error);
+      throw error;
+    }
+  }
 };
