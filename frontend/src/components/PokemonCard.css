@@ -36,23 +36,27 @@
 }
 
 .pokemon-number {
+  text-align: left;
   display: block;
   font-size: 0.8rem;
+  font-weight: 600;
   color: #666;
-  margin-bottom: 4px;
+  margin: 8px 0 4px 0;
 }
 
 .pokemon-name {
-  font-size: 1.2rem;
+  font-size: 1rem;
   font-weight: bold;
+  text-align: left;
   margin: 4px 0;
   color: #333;
 }
 
 .pokemon-info {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
+  justify-content: space-between;
   gap: 4px;
   font-size: 0.9rem;
   color: #444;
@@ -60,8 +64,9 @@
 
 .pokemon-type {
   color: #666;
+  font-weight: 400;
 }
 
 .pokemon-stat {
-  font-weight: 500;
+  font-weight: 800;
 }
