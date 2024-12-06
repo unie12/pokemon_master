@@ -2,6 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { authApi } from "../services/api";
 import { useAuth } from "../contexts/AuthContext";
+import MainLogo from "../assets/images/main_logo.png";
 import "./Header.css";
 
 const Header = () => {
@@ -23,26 +24,26 @@ const Header = () => {
       <nav>
         <div className="nav-left">
           <h1 onClick={() => navigate("/")} style={{ cursor: "pointer" }}>
-            포켓몬 마스터
+            <img src={MainLogo} alt="Main Logo" />
           </h1>
         </div>
         <div className="nav-right">
-          <button onClick={() => navigate("/ranking")} className="ranking-btn">
+          <p onClick={() => navigate("/ranking")} className="ranking-btn">
             랭킹
-          </button>
-          <button onClick={() => navigate("/gacha")} className="gacha-btn">
+          </p>
+          <p onClick={() => navigate("/gacha")} className="gacha-btn">
             뽑기
-          </button>
-          <button onClick={() => navigate("/mypokemon")} className="mypok-btn">
+          </p>
+          <p onClick={() => navigate("/mypokemon")} className="mypok-btn">
             나의 팀
-          </button>
+          </p>
           {user ? (
             <div className="user-info">
               <span>{user.username}님 환영합니다!</span>
-              <button onClick={handleLogout}>로그아웃</button>
+              <p onClick={handleLogout}>로그아웃</p>
             </div>
           ) : (
-            <button onClick={() => navigate("/auth")}>로그인</button>
+            <p onClick={() => navigate("/auth")}>로그인</p>
           )}
         </div>
       </nav>
