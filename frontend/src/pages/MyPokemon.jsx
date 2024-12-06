@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { teamApi } from "../services/api";
 import { useAuth } from '../contexts/AuthContext';
+import FilterPanel from "../components/FilterPanel";
+import { TYPE_MAPPING, REVERSE_TYPE_MAPPING } from '../utils/typeMapping';
+
 import "./MyPokemon.css";
 
 const MyPokemon = () => {
@@ -9,6 +12,11 @@ const MyPokemon = () => {
   const [team, setTeam] = useState(null);
   const [teamName, setTeamName] = useState("");
   const { user } = useAuth();
+
+  const [sortBy, setSortBy] = useState("pokedex_number");
+  const [sortOrder, setSortOrder] = useState("asc");
+  const [selectedTypes, setSelectedTypes] = useState([]);
+  const [filteredPokemons, setFilteredPokemons] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -124,6 +132,48 @@ const MyPokemon = () => {
     }
   };
 
+  const availableTypes = [
+    "노말", "불꽃", "물", "전기", "풀", "얼음", "격투", "독", 
+    "땅", "비행", "에스퍼", "벌레", "바위", "고스트", 
+    "드래곤", "악", "강철", "페어리"
+  ];
+
+  // 포켓몬 필터링 및 정렬 로직
+  useEffect(() => {
+    let filtered = [...pokemons];
+
+    // 타입 필터링
+    if (selectedTypes.length > 0) {
+      filtered = filtered.filter(pokemon => {
+        // 영어 타입을 한글로 변환하여 비교
+        const pokemonType1 = TYPE_MAPPING[pokemon.type1] || pokemon.type1;
+        const pokemonType2 = TYPE_MAPPING[pokemon.type2] || pokemon.type2;
+        
+        return selectedTypes.some(selectedType => 
+          pokemonType1 === selectedType || pokemonType2 === selectedType
+        );
+      });
+    }
+
+    // 정렬
+    filtered.sort((a, b) => {
+      const aValue = a[sortBy] || 0;
+      const bValue = b[sortBy] || 0;
+      
+      if (typeof aValue === 'string') {
+        return sortOrder === "asc" 
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue);
+      }
+      
+      return sortOrder === "asc" 
+        ? aValue - bValue 
+        : bValue - aValue;
+    });
+
+    setFilteredPokemons(filtered);
+  }, [pokemons, sortBy, sortOrder, selectedTypes]);
+
   return (
     <div className="my-pokemon-container">
       <h1>내 포켓몬</h1>
@@ -141,6 +191,7 @@ const MyPokemon = () => {
           {team ? '팀 이름 수정' : '팀 생성'}
         </button>
       </div>
+
 
       {/* 슬롯 섹션 */}
       <div className="pokemon-slots">
@@ -166,10 +217,27 @@ const MyPokemon = () => {
         ))}
       </div>
 
+      {/* FilterPanel 추가 */}
+      <FilterPanel
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        selectedTypes={selectedTypes}
+        onSortChange={setSortBy}
+        onSortOrderChange={setSortOrder}
+        onTypeToggle={(type) => {
+          setSelectedTypes(prev =>
+            prev.includes(type)
+              ? prev.filter(t => t !== type)
+              : [...prev, type]
+          );
+        }}
+        availableTypes={availableTypes}
+      />
+
       {/* 포켓몬 리스트 */}
       <h2>보유한 포켓몬</h2>
       <div className="my-pokemon-list">
-        {pokemons.map((pokemon) => (
+        {filteredPokemons.map((pokemon) => (
           <div
             key={pokemon.id}
             className="my-pokemon-item"

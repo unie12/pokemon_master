@@ -15,15 +15,6 @@ def get_team_type_analysis(team_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# @team_bp.route('/teams/<int:team_id>', methods=['GET'])
-# def get_team_details(team_id):
-#     try:
-#         team_details = team_service.get_team_details(team_id)
-#         if not team_details:
-#             return jsonify({'error': 'Team not found'}), 404
-#         return jsonify(team_details)
-#     except Exception as e:
-#         return jsonify({'error': str(e)}), 500
     
 @team_bp.route('/teams/<int:user_id>/pokemons', methods=['GET'])
 def get_user_pokemons(user_id):
@@ -71,40 +62,6 @@ def add_pokemon_to_team(team_id):
         return jsonify(result)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-# @team_bp.route('/teams/<int:team_id>/add-pokemon', methods=['POST'])
-# def add_pokemon_to_team(self, team_id, pokemon_id, slot_number):
-#     with self.get_db_connection() as conn:
-#         with conn.cursor() as cur:
-#             # 슬롯 유효성 검사
-#             if slot_number < 1 or slot_number > 6:
-#                 return {"error": "Invalid slot number"}
-
-#             # 포켓몬 소유 여부 확인
-#             cur.execute("""
-#                 SELECT user_id FROM Team WHERE team_id = %s
-#             """, (team_id,))
-#             team = cur.fetchone()
-            
-#             cur.execute("""
-#                 SELECT 1 FROM UserPokemon 
-#                 WHERE user_id = %s AND pokemon_id = %s
-#             """, (team[0], pokemon_id))
-            
-#             if not cur.fetchone():
-#                 return {"error": "You don't own this pokemon"}
-
-#             # 슬롯에 포켓몬 추가/업데이트
-#             cur.execute("""
-#                 INSERT INTO TeamPokemon (team_id, pokemon_id, slot_number)
-#                 VALUES (%s, %s, %s)
-#                 ON CONFLICT (team_id, slot_number) 
-#                 DO UPDATE SET pokemon_id = EXCLUDED.pokemon_id
-#                 RETURNING *
-#             """, (team_id, pokemon_id, slot_number))
-            
-#             conn.commit()
-#             return {"message": "Pokemon added to team successfully"}
-    
 
 @team_bp.route('/teams/<int:team_id>/slots', methods=['GET'])
 def get_team_slots(team_id):
@@ -166,24 +123,3 @@ def get_user_team(user_id):
             "success": False,
             "error": str(e)
         }), 500
-        
-# @team_bp.route('/teams/<int:user_id>', methods=['GET'])
-# def get_user_teams(user_id):
-#     """사용자의 모든 팀 조회"""
-#     try:
-#         result = team_service.get_teams(user_id)
-#         if not result:
-#             return jsonify({
-#                 "success": True,
-#                 "teams": []  # 팀이 없는 경우 빈 배열 반환
-#             })
-#         return jsonify({
-#             "success": True,
-#             "teams": result
-#         })
-#     except Exception as e:
-#         print(f"Error in get_user_teams: {str(e)}")  # 디버깅용 로그 추가
-#         return jsonify({
-#             "success": False,
-#             "error": str(e)
-#         }), 500

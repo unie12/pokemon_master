@@ -96,19 +96,30 @@ class TeamService:
         with self.get_db_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute("""
-                    SELECT p.id, p.name, p.type1, p.type2
-                    FROM UserPokemon up
-                    JOIN Pokemon p ON up.pokemon_id = p.id
+                    SELECT p.id, p.name, p.type1, p.type2, 
+                        p.total, p.hp, p.attack, p.defense,
+                        p.sp_attack, p.sp_defense, p.speed,
+                        p.pokedex_number
+                    FROM UserPokemon up 
+                    JOIN Pokemon p ON up.pokemon_id = p.id 
                     WHERE up.user_id = %s
                     ORDER BY p.id
                 """, (user_id,))
-                pokemons = cur.fetchall()
                 
+                pokemons = cur.fetchall()
                 return [{
                     'id': pokemon[0],
                     'name': pokemon[1],
                     'type1': pokemon[2],
                     'type2': pokemon[3],
+                    'total': pokemon[4],
+                    'hp': pokemon[5],
+                    'attack': pokemon[6],
+                    'defense': pokemon[7],
+                    'sp_attack': pokemon[8],
+                    'sp_defense': pokemon[9],
+                    'speed': pokemon[10],
+                    'pokedex_number': pokemon[11],
                     'image_path': f'/static/images/{pokemon[0]}.png'
                 } for pokemon in pokemons]
             
@@ -173,35 +184,6 @@ class TeamService:
                 except Exception as e:
                     conn.rollback()
                     raise e
-            
-            
-    # def get_teams(self, user_id):
-    #     """사용자의 모든 팀 조회"""
-    #     with self.get_db_connection() as conn:
-    #         with conn.cursor() as cur:
-    #             try:
-    #                 cur.execute("""
-    #                     SELECT team_id, team_name, created_date
-    #                     FROM Team
-    #                     WHERE user_id = %s
-    #                     ORDER BY created_date DESC
-    #                 """, (user_id,))
-    #                 teams = cur.fetchall()
-                    
-    #                 if not teams:
-    #                     return []
-                    
-    #                 # 날짜 처리를 안전하게 수행
-    #                 return [{
-    #                     'id': team[0],
-    #                     'name': team[1],
-    #                     'created_date': team[2].strftime('%Y-%m-%d %H:%M:%S') if team[2] else None
-    #                 } for team in teams]
-                    
-    #             except Exception as e:
-    #                 print(f"Database error in get_teams: {str(e)}")
-    #                 conn.rollback()
-    #                 raise Exception(f"Failed to fetch teams: {str(e)}")
                 
     def get_team_pokemons(self, team_id):
         """특정 팀의 포켓몬 조회"""
@@ -310,28 +292,3 @@ class TeamService:
                     conn.rollback()
                     raise e
                 
-
-    # def get_team_details(self, team_id):
-    #     with self.get_db_connection() as conn:
-    #         with conn.cursor() as cur:
-    #             cur.execute("""
-    #                 SELECT 
-    #                     t.team_id,
-    #                     t.team_name,
-    #                     u.username,
-    #                     u.user_id
-    #                 FROM Team t
-    #                 JOIN Users u ON t.user_id = u.user_id
-    #                 WHERE t.team_id = %s
-    #             """, (team_id,))
-    #             team_info = cur.fetchone()
-                
-    #             if not team_info:
-    #                 return None
-                    
-    #             return {
-    #                 'id': team_info[0],
-    #                 'name': team_info[1],
-    #                 'username': team_info[2],
-    #                 'user_id': team_info[3]
-    #             }

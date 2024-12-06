@@ -126,7 +126,7 @@
 }
 
 /* 헤더 스타일 */
-h1, h2 {
+/* h1, h2 {
   color: #333;
   margin-bottom: 20px;
 }
@@ -140,4 +140,4 @@ h1 {
 h2 {
   font-size: 22px;
   margin-top: 30px;
-}
+} */
